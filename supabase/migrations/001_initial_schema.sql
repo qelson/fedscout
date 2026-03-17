@@ -44,7 +44,8 @@ create table public.user_preferences (
   max_value bigint,
   agencies text[] not null default '{}',
   created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
+  updated_at timestamptz not null default now(),
+  unique(user_id)
 );
 
 alter table public.user_preferences enable row level security;
