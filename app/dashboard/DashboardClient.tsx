@@ -470,10 +470,10 @@ export default function DashboardClient({
               style={{ backgroundColor: '#172554', borderColor: '#1e3a8a' }}
             >
               <p className="text-xs font-bold uppercase tracking-wide mb-1" style={{ color: '#93c5fd' }}>
-                Next digest
+                Daily Briefing
               </p>
               <p className="text-xs mb-2" style={{ color: '#60a5fa' }}>
-                Your daily picks land in your inbox every morning.
+                Your matched contracts delivered to your inbox every morning at 8am EST.
               </p>
               <p className="text-xs font-semibold mb-2" style={{ color: '#93c5fd' }}>
                 Tomorrow · 8:00 AM
