@@ -9,8 +9,8 @@ export default function Home() {
       {/* ── Navbar ── */}
       <header className="sticky top-0 z-50 border-b" style={{ backgroundColor: '#0a0f1e', borderColor: '#1e293b' }}>
         <div className="max-w-7xl mx-auto px-6 sm:px-8 h-14 flex items-center justify-between">
-          <Link href="/" className="text-3xl font-extrabold tracking-tight">
-            <span className="text-white">Fed</span><span style={{ color: '#ef4444' }}>Scout</span>
+          <Link href="/" className="text-4xl font-extrabold tracking-tight">
+            <span className="text-white">Fed</span><span className="text-red-500">Scout</span>
           </Link>
 
           <nav className="flex items-center gap-5">
