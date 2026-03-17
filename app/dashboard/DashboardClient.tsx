@@ -240,8 +240,8 @@ export default function DashboardClient({
         <div className="max-w-7xl mx-auto px-6 h-full flex items-center justify-between">
           {/* Left: logo + nav tabs */}
           <div className="flex items-center h-full">
-            <Link href="/" className="text-2xl font-extrabold tracking-tight mr-6">
-              <span className="text-white">Fed</span><span style={{ color: '#ef4444' }}>Scout</span>
+            <Link href="/" className="text-4xl font-extrabold tracking-tight mr-6">
+              <span className="text-white">Fed</span><span className="text-red-500">Scout</span>
             </Link>
             <nav className="flex items-center h-full">
               {[

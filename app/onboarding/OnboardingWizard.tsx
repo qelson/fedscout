@@ -425,8 +425,8 @@ export default function OnboardingWizard() {
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-lg bg-white rounded-2xl shadow-sm border border-gray-100 p-10">
         <div className="mb-1">
-          <Link href="/" className="text-xs font-semibold uppercase tracking-widest text-gray-400 hover:text-gray-600 transition-colors">
-            fedscout
+          <Link href="/" className="text-4xl font-extrabold tracking-tight">
+            <span className="text-white">Fed</span><span className="text-red-500">Scout</span>
           </Link>
           <span className="text-xs font-semibold uppercase tracking-widest text-gray-400"> setup</span>
         </div>
