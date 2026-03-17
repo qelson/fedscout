@@ -21,10 +21,7 @@ export default function Home() {
             <div className="hidden md:block w-8 h-4 rounded-full border cursor-pointer" style={{ backgroundColor: '#1e293b', borderColor: '#334155' }} />
             <Link
               href="/quiz"
-              className="rounded-md px-4 py-2 text-sm font-semibold text-white transition-colors"
-              style={{ backgroundColor: '#B91C1C' }}
-              onMouseOver={e => (e.currentTarget.style.backgroundColor = '#991b1b')}
-              onMouseOut={e => (e.currentTarget.style.backgroundColor = '#B91C1C')}
+              className="rounded-md px-4 py-2 text-sm font-semibold text-white transition-colors bg-red-700 hover:bg-red-800"
             >
               Start free trial
             </Link>
@@ -57,10 +54,7 @@ export default function Home() {
             <div className="flex flex-col sm:flex-row gap-3 mb-8">
               <Link
                 href="/quiz"
-                className="inline-flex items-center justify-center rounded-md px-6 py-2.5 text-sm font-bold text-white transition-colors"
-                style={{ backgroundColor: '#B91C1C' }}
-                onMouseOver={e => (e.currentTarget.style.backgroundColor = '#991b1b')}
-                onMouseOut={e => (e.currentTarget.style.backgroundColor = '#B91C1C')}
+                className="inline-flex items-center justify-center rounded-md px-6 py-2.5 text-sm font-bold text-white transition-colors bg-red-700 hover:bg-red-800"
               >
                 Find my contracts →
               </Link>
