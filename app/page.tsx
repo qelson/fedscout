@@ -33,14 +33,12 @@ export default function Home() {
 
           {/* Left column */}
           <div className="pb-10 lg:pb-14">
-            <h1 className="text-4xl sm:text-5xl font-extrabold text-slate-50 leading-tight tracking-tight mb-5">
-              Stop losing contracts<br />
-              to companies that<br />
-              <span style={{ color: '#93c5fd' }}>just showed up first</span>
+            <h1 className="text-3xl sm:text-4xl font-extrabold text-white leading-tight tracking-tight mb-5">
+              Stop leaving federal contracts on the table.
             </h1>
 
-            <p className="text-sm text-slate-500 leading-relaxed max-w-sm mb-8">
-              FedScout monitors every federal contract on SAM.gov and sends you the ones that match your business — every morning before your competition sees them.
+            <p className="text-base text-slate-400 leading-relaxed max-w-md mb-8">
+              SAM.gov posts hundreds of contracts daily. FedScout finds the ones that are actually for you — delivered to your inbox every morning.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-3 mb-8">
@@ -59,21 +57,6 @@ export default function Home() {
               </a>
             </div>
 
-            {/* Social proof */}
-            <div className="flex items-center gap-3">
-              <div className="flex -space-x-2">
-                {[['JT', '1e3a8a'], ['MR', '1e3a8a'], ['SK', '1e3a8a']].map(([initials, bg]) => (
-                  <div
-                    key={initials}
-                    className="h-7 w-7 rounded-full border-2 flex items-center justify-center text-xs font-bold text-white flex-shrink-0"
-                    style={{ backgroundColor: `#${bg}`, borderColor: '#0a0f1e' }}
-                  >
-                    {initials}
-                  </div>
-                ))}
-              </div>
-              <span className="text-xs text-slate-500">Join 200+ contractors already using FedScout</span>
-            </div>
           </div>
 
           {/* Right column — email preview */}
