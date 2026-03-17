@@ -63,13 +63,15 @@ export default async function DashboardPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const { data: prefs } = await supabase
-    .from('user_preferences')
-    .select('*')
-    .eq('user_id', user.id)
-    .maybeSingle()
+  const [{ data: prefs }, { data: profile }] = await Promise.all([
+    supabase.from('user_preferences').select('*').eq('user_id', user.id).maybeSingle(),
+    supabase.from('profiles').select('stripe_subscription_status').eq('id', user.id).single(),
+  ])
 
   if (!prefs) redirect('/onboarding')
+
+  const status = profile?.stripe_subscription_status
+  if (status !== 'active' && status !== 'trialing') redirect('/pricing')
 
   const opportunities = await fetchOpportunities(supabase, prefs, user.id)
 

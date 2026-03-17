@@ -9,11 +9,10 @@ export default async function SettingsPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
 
-  const { data: prefs } = await supabase
-    .from('user_preferences')
-    .select('*')
-    .eq('user_id', user.id)
-    .maybeSingle()
+  const [{ data: prefs }, { data: profile }] = await Promise.all([
+    supabase.from('user_preferences').select('*').eq('user_id', user.id).maybeSingle(),
+    supabase.from('profiles').select('stripe_customer_id, stripe_subscription_status').eq('id', user.id).single(),
+  ])
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -37,7 +36,11 @@ export default async function SettingsPage() {
       </header>
 
       <main className="max-w-2xl mx-auto px-4 sm:px-6 py-10">
-        <SettingsClient initialPrefs={prefs} />
+        <SettingsClient
+          initialPrefs={prefs}
+          stripeCustomerId={profile?.stripe_customer_id ?? null}
+          subscriptionStatus={profile?.stripe_subscription_status ?? null}
+        />
       </main>
     </div>
   )

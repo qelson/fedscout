@@ -36,8 +36,12 @@ function sizeIndexFromPrefs(min: number | null, max: number | null): number | nu
 
 export default function SettingsClient({
   initialPrefs,
+  stripeCustomerId,
+  subscriptionStatus,
 }: {
   initialPrefs: UserPreferences | null
+  stripeCustomerId: string | null
+  subscriptionStatus: string | null
 }) {
   const router = useRouter()
 
@@ -62,6 +66,9 @@ export default function SettingsClient({
 
   const [testSending, setTestSending] = useState(false)
   const [testResult, setTestResult] = useState<{ ok: boolean; message: string } | null>(null)
+
+  const [portalLoading, setPortalLoading] = useState(false)
+  const [portalError, setPortalError] = useState<string | null>(null)
 
   // ── NAICS helpers ────────────────────────────────────────────────────────
   const filteredNaics = NAICS_OPTIONS.filter(
@@ -92,6 +99,20 @@ export default function SettingsClient({
     setAgencies((prev) =>
       prev.includes(a) ? prev.filter((x) => x !== a) : [...prev, a]
     )
+  }
+
+  // ── Billing portal ───────────────────────────────────────────────────────
+  async function handleManageBilling() {
+    setPortalLoading(true)
+    setPortalError(null)
+    const res = await fetch('/api/stripe/portal-session', { method: 'POST' })
+    const data = await res.json()
+    if (!res.ok || !data.url) {
+      setPortalError(data.error ?? 'Could not open billing portal.')
+      setPortalLoading(false)
+      return
+    }
+    window.location.href = data.url
   }
 
   // ── Test digest ──────────────────────────────────────────────────────────
@@ -329,6 +350,43 @@ export default function SettingsClient({
         {saved && <span className="text-sm text-green-600">Saved!</span>}
         {error && <span className="text-sm text-red-600">{error}</span>}
       </div>
+
+      <hr className="border-gray-100" />
+
+      {/* ── Billing ── */}
+      <section className="space-y-2">
+        <h2 className="text-base font-semibold text-gray-900">Billing</h2>
+        <p className="text-sm text-gray-500">
+          Subscription status:{' '}
+          <span className={`font-medium ${
+            subscriptionStatus === 'active' ? 'text-green-600' :
+            subscriptionStatus === 'trialing' ? 'text-blue-600' :
+            'text-gray-500'
+          }`}>
+            {subscriptionStatus ?? 'None'}
+          </span>
+        </p>
+        {stripeCustomerId ? (
+          <div className="flex items-center gap-3 pt-1">
+            <button
+              type="button"
+              onClick={handleManageBilling}
+              disabled={portalLoading}
+              className="rounded-lg border border-gray-300 px-5 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-40 transition-colors"
+            >
+              {portalLoading ? 'Opening…' : 'Manage billing'}
+            </button>
+            {portalError && <span className="text-sm text-red-600">{portalError}</span>}
+          </div>
+        ) : (
+          <a
+            href="/pricing"
+            className="inline-block rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 transition-colors"
+          >
+            Start free trial
+          </a>
+        )}
+      </section>
 
       <hr className="border-gray-100" />
 

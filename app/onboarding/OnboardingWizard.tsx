@@ -391,7 +391,7 @@ export default function OnboardingWizard() {
     }
 
     setDone(true)
-    setTimeout(() => router.push('/dashboard'), 2500)
+    setTimeout(() => router.push('/pricing'), 2500)
   }
 
   if (done) {
