@@ -57,6 +57,8 @@ export default function Home() {
               </a>
             </div>
 
+            <p className="text-slate-500 text-sm italic">Be one of the first contractors to use FedScout.</p>
+
           </div>
 
           {/* Right column — email preview */}
