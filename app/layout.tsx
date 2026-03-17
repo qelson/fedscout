@@ -14,7 +14,7 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "ContractPulse",
+  title: "FedScout",
   description: "Never miss a government contract",
 };
 

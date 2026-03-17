@@ -8,7 +8,7 @@ export default function Home() {
           Never miss a government contract
         </h1>
         <p className="text-xl text-gray-500">
-          ContractPulse monitors SAM.gov and alerts you to opportunities that
+          FedScout monitors SAM.gov and alerts you to opportunities that
           match your business profile — before the deadline slips by.
         </p>
         <Link
