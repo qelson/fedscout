@@ -34,6 +34,30 @@ function sizeIndexFromPrefs(min: number | null, max: number | null): number | nu
   return SIZE_OPTIONS.findIndex((o) => o.min === min && o.max === max)
 }
 
+function SectionHeader({ title, description }: { title: string; description: string }) {
+  return (
+    <div className="pb-4 border-b border-gray-100">
+      <h2 className="text-sm font-semibold text-gray-900">{title}</h2>
+      <p className="mt-0.5 text-sm text-gray-500">{description}</p>
+    </div>
+  )
+}
+
+function StatusBadge({ status }: { status: string | null }) {
+  if (!status) return <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-500">No subscription</span>
+  const isActive = status === 'active' || status === 'trialing'
+  const isCanceled = status === 'canceled'
+  return (
+    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+      isActive ? 'bg-green-100 text-green-700' :
+      isCanceled ? 'bg-red-100 text-red-700' :
+      'bg-gray-100 text-gray-500'
+    }`}>
+      {status.charAt(0).toUpperCase() + status.slice(1)}
+    </span>
+  )
+}
+
 export default function SettingsClient({
   initialPrefs,
   stripeCustomerId,
@@ -158,19 +182,20 @@ export default function SettingsClient({
 
   return (
     <div className="space-y-10">
+
       {/* ── NAICS ── */}
-      <section className="space-y-4">
-        <div>
-          <h2 className="text-base font-semibold text-gray-900">Work categories (NAICS)</h2>
-          <p className="text-sm text-gray-500 mt-0.5">Select all codes that apply to your business.</p>
-        </div>
+      <section className="space-y-5">
+        <SectionHeader
+          title="Work categories"
+          description="Select all NAICS codes that apply to your business."
+        />
 
         <input
           type="text"
           placeholder="Search NAICS codes…"
           value={naicsQuery}
           onChange={(e) => setNaicsQuery(e.target.value)}
-          className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900"
         />
 
         <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
@@ -206,7 +231,7 @@ export default function SettingsClient({
             onChange={(e) => { setCustomCode(e.target.value); setCustomError('') }}
             onKeyDown={(e) => e.key === 'Enter' && addCustomNaics()}
             maxLength={6}
-            className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900"
           />
           <button
             type="button"
@@ -242,14 +267,12 @@ export default function SettingsClient({
         )}
       </section>
 
-      <hr className="border-gray-100" />
-
       {/* ── Keywords & Agencies ── */}
-      <section className="space-y-4">
-        <div>
-          <h2 className="text-base font-semibold text-gray-900">Keywords & Agencies</h2>
-          <p className="text-sm text-gray-500 mt-0.5">Used to match contract titles and descriptions.</p>
-        </div>
+      <section className="space-y-5">
+        <SectionHeader
+          title="Keywords & agencies"
+          description="Used to match contract titles and descriptions."
+        />
 
         <div className="space-y-1.5">
           <label className="block text-sm font-medium text-gray-700">
@@ -260,7 +283,7 @@ export default function SettingsClient({
             placeholder="e.g. cybersecurity, IT support, network infrastructure"
             value={keywords}
             onChange={(e) => setKeywords(e.target.value)}
-            className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none"
+            className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900 resize-none"
           />
         </div>
 
@@ -276,7 +299,7 @@ export default function SettingsClient({
                   key={a}
                   className={`flex items-center justify-center rounded-lg border py-2.5 text-sm font-medium cursor-pointer transition-colors ${
                     checked
-                      ? 'border-blue-500 bg-blue-50 text-blue-700'
+                      ? 'border-gray-900 bg-gray-900 text-white'
                       : 'border-gray-200 text-gray-600 hover:border-gray-300'
                   }`}
                 >
@@ -289,14 +312,12 @@ export default function SettingsClient({
         </div>
       </section>
 
-      <hr className="border-gray-100" />
-
       {/* ── Contract size ── */}
-      <section className="space-y-4">
-        <div>
-          <h2 className="text-base font-semibold text-gray-900">Contract size</h2>
-          <p className="text-sm text-gray-500 mt-0.5">Filter by estimated contract value.</p>
-        </div>
+      <section className="space-y-5">
+        <SectionHeader
+          title="Contract size"
+          description="Filter by estimated contract value."
+        />
 
         <label className="flex items-center gap-2.5 cursor-pointer">
           <input
@@ -306,7 +327,7 @@ export default function SettingsClient({
               setAnySize(e.target.checked)
               if (e.target.checked) setSizeIndex(null)
             }}
-            className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            className="h-4 w-4 rounded border-gray-300 text-gray-900 focus:ring-gray-900"
           />
           <span className="text-sm font-medium text-gray-700">Any size — show all contracts</span>
         </label>
@@ -338,41 +359,38 @@ export default function SettingsClient({
       </section>
 
       {/* ── Save ── */}
-      <div className="flex items-center gap-3 pt-2">
+      <div className="flex items-center gap-3">
         <button
           type="button"
           onClick={handleSave}
           disabled={saving}
-          className="rounded-lg bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-40 transition-colors"
+          className="rounded-lg bg-gray-900 px-6 py-2.5 text-sm font-semibold text-white hover:bg-gray-700 disabled:opacity-40 transition-colors"
         >
           {saving ? 'Saving…' : 'Save changes'}
         </button>
-        {saved && <span className="text-sm text-green-600">Saved!</span>}
+        {saved && <span className="text-sm text-green-600 font-medium">Saved!</span>}
         {error && <span className="text-sm text-red-600">{error}</span>}
       </div>
 
-      <hr className="border-gray-100" />
-
       {/* ── Billing ── */}
-      <section className="space-y-2">
-        <h2 className="text-base font-semibold text-gray-900">Billing</h2>
-        <p className="text-sm text-gray-500">
-          Subscription status:{' '}
-          <span className={`font-medium ${
-            subscriptionStatus === 'active' ? 'text-green-600' :
-            subscriptionStatus === 'trialing' ? 'text-blue-600' :
-            'text-gray-500'
-          }`}>
-            {subscriptionStatus ?? 'None'}
-          </span>
-        </p>
+      <section className="space-y-5">
+        <SectionHeader
+          title="Billing"
+          description="Manage your subscription and payment details."
+        />
+
+        <div className="flex items-center gap-3">
+          <span className="text-sm text-gray-600">Subscription status</span>
+          <StatusBadge status={subscriptionStatus} />
+        </div>
+
         {stripeCustomerId ? (
-          <div className="flex items-center gap-3 pt-1">
+          <div className="flex items-center gap-3">
             <button
               type="button"
               onClick={handleManageBilling}
               disabled={portalLoading}
-              className="rounded-lg border border-gray-300 px-5 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-40 transition-colors"
+              className="rounded-lg border border-gray-300 px-5 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-40 transition-colors"
             >
               {portalLoading ? 'Opening…' : 'Manage billing'}
             </button>
@@ -381,27 +399,41 @@ export default function SettingsClient({
         ) : (
           <a
             href="/pricing"
-            className="inline-block rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 transition-colors"
+            className="inline-block rounded-lg bg-gray-900 px-5 py-2 text-sm font-semibold text-white hover:bg-gray-700 transition-colors"
           >
             Start free trial
           </a>
         )}
       </section>
 
-      <hr className="border-gray-100" />
+      {/* ── Notifications ── */}
+      <section className="space-y-5">
+        <SectionHeader
+          title="Notifications"
+          description="Control how and when you receive updates."
+        />
+
+        <div className="flex items-center gap-3">
+          <span className="text-sm text-gray-600">Daily digest emails</span>
+          <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-700">
+            Enabled
+          </span>
+        </div>
+      </section>
 
       {/* ── Test digest ── */}
-      <section className="space-y-2">
-        <h2 className="text-base font-semibold text-gray-900">Email digest</h2>
-        <p className="text-sm text-gray-500">
-          Send a preview digest to your email right now using your current preferences.
-        </p>
-        <div className="flex items-center gap-3 pt-1">
+      <section className="space-y-5">
+        <SectionHeader
+          title="Email digest"
+          description="Send a preview digest to your email using your current preferences."
+        />
+
+        <div className="flex items-center gap-3">
           <button
             type="button"
             onClick={handleTestDigest}
             disabled={testSending}
-            className="rounded-lg border border-gray-300 px-5 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-40 transition-colors"
+            className="rounded-lg border border-gray-300 px-5 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-40 transition-colors"
           >
             {testSending ? 'Sending…' : 'Send test digest'}
           </button>
@@ -412,6 +444,7 @@ export default function SettingsClient({
           )}
         </div>
       </section>
+
     </div>
   )
 }
