@@ -35,16 +35,11 @@ const COMPARISON = [
   { feature: 'SMB-friendly pricing',          fedscout: true,  govwin: false },
 ]
 
-export default function PricingClient({ isLoggedIn }: { isLoggedIn: boolean }) {
+export default function PricingClient() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   async function handleStartTrial() {
-    if (!isLoggedIn) {
-      window.location.href = '/login'
-      return
-    }
-
     setLoading(true)
     setError(null)
 
