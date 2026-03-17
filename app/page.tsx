@@ -26,14 +26,6 @@ function IconChart() {
   )
 }
 
-function IconCheck() {
-  return (
-    <svg className="h-4 w-4 shrink-0 text-green-600" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-    </svg>
-  )
-}
-
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function Home() {
@@ -47,7 +39,7 @@ export default function Home() {
 
           <nav className="flex items-center gap-6">
             <a href="#how-it-works" className="hidden md:block text-sm text-gray-500 hover:text-gray-900 transition-colors">How it works</a>
-            <a href="#pricing" className="hidden md:block text-sm text-gray-500 hover:text-gray-900 transition-colors">Pricing</a>
+            <Link href="/pricing" className="hidden md:block text-sm text-gray-500 hover:text-gray-900 transition-colors">Pricing</Link>
             <Link href="/login" className="hidden md:block text-sm text-gray-500 hover:text-gray-900 transition-colors">Sign in</Link>
             <Link
               href="/signup"
@@ -61,14 +53,16 @@ export default function Home() {
 
       {/* ── Hero ── */}
       <section className="max-w-2xl mx-auto px-4 sm:px-6 pt-24 pb-20 text-center">
-        <p className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-5">
-          SAM.gov intelligence for small contractors
-        </p>
+        <div className="inline-block rounded-full bg-blue-50 px-3 py-1 mb-6">
+          <p className="text-xs font-semibold uppercase tracking-widest text-blue-600">
+            Built for small government contractors
+          </p>
+        </div>
         <h1 className="text-4xl sm:text-5xl font-bold tracking-tight leading-tight text-gray-900 mb-6">
-          Stop missing federal contract opportunities
+          Your next federal contract is already on SAM.gov. Are you seeing it?
         </h1>
         <p className="text-lg text-gray-500 leading-relaxed mb-10">
-          FedScout monitors SAM.gov daily and sends you a personalized digest of contracts matching your business — before the deadline slips by.
+          FedScout learns your business profile and surfaces the contracts most likely to win — delivered to your inbox before the deadline.
         </p>
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-14">
@@ -76,7 +70,7 @@ export default function Home() {
             href="/signup"
             className="w-full sm:w-auto rounded-lg bg-gray-900 px-7 py-3 text-sm font-semibold text-white hover:bg-gray-700 transition-colors"
           >
-            Start 14-day free trial
+            Find my opportunities →
           </Link>
           <a
             href="#how-it-works"
@@ -90,13 +84,61 @@ export default function Home() {
           {[
             { stat: '$600B+', label: 'in federal contracts annually' },
             { stat: '$49/mo', label: 'vs $29k/yr for GovWin' },
-            { stat: 'Daily', label: 'personalized digest' },
+            { stat: 'Daily', label: 'tailored opportunity picks' },
           ].map(({ stat, label }) => (
             <div key={stat} className="text-center">
               <p className="text-2xl font-bold text-gray-900">{stat}</p>
               <p className="mt-1 text-sm text-gray-400">{label}</p>
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* ── How it works ── */}
+      <section id="how-it-works" className="border-t border-gray-100 bg-gray-50">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 py-20">
+          <div className="text-center mb-14">
+            <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-3">
+              How FedScout works
+            </h2>
+            <p className="text-sm text-gray-500">
+              From setup to opportunities in your inbox — in minutes.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-10">
+            {[
+              {
+                num: '1',
+                title: 'Tell us about your business',
+                desc: 'We ask about your NAICS codes, past work, and target agencies. Takes 2 minutes.',
+              },
+              {
+                num: '2',
+                title: 'We scan SAM.gov daily',
+                desc: 'Our system monitors every new federal contract posting and scores it against your profile.',
+              },
+              {
+                num: '3',
+                title: 'Your tailored picks arrive',
+                desc: 'Every morning you get a shortlist of the contracts most relevant to your business. Not hundreds — just the right ones.',
+              },
+            ].map(({ num, title, desc }, i) => (
+              <div key={num} className="relative flex flex-col gap-4">
+                {/* Connecting line (desktop only, not after last item) */}
+                {i < 2 && (
+                  <div className="hidden sm:block absolute top-4 left-[calc(50%+20px)] right-[-calc(50%-20px)] h-px bg-gray-200" style={{ left: '2.5rem', right: '-50%' }} />
+                )}
+                <div className="flex items-center gap-3">
+                  <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-gray-900 text-xs font-bold text-white shrink-0 relative z-10">
+                    {num}
+                  </span>
+                </div>
+                <h3 className="text-sm font-semibold text-gray-900">{title}</h3>
+                <p className="text-sm text-gray-500 leading-relaxed">{desc}</p>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
@@ -107,8 +149,8 @@ export default function Home() {
             {[
               {
                 icon: <IconMail />,
-                title: 'Daily email digest',
-                desc: 'New matching contracts in your inbox every morning. Never check SAM.gov manually again.',
+                title: 'Tailored opportunity matching',
+                desc: 'Contracts scored and ranked for your business profile — not a raw feed of everything on SAM.gov.',
               },
               {
                 icon: <IconFilter />,
@@ -133,80 +175,29 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── How it works ── */}
-      <section id="how-it-works" className="border-t border-gray-100 bg-gray-50">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 py-20 text-center">
-          <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-4">
-            Built for small contractors who can&apos;t afford GovWin
+      {/* ── CTA ── */}
+      <section className="border-t border-gray-100 bg-gray-50">
+        <div className="max-w-xl mx-auto px-4 sm:px-6 py-20 text-center">
+          <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-3">
+            Ready to stop missing contracts?
           </h2>
-          <p className="text-gray-500 text-sm mb-14">
-            GovWin starts at $29,000/year. FedScout gives you the same daily intel for $49/month.
+          <p className="text-sm text-gray-500 mb-8">
+            Join contractors who use FedScout to stay ahead of SAM.gov.
           </p>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 text-left">
-            {[
-              { num: '1', title: 'Set your profile', desc: 'Enter your NAICS codes, keywords, target agencies, and contract size range.' },
-              { num: '2', title: 'We monitor SAM.gov daily', desc: 'FedScout scans SAM.gov every morning and filters opportunities against your profile.' },
-              { num: '3', title: 'Opportunities in your inbox', desc: 'Get a clean digest of matching contracts each morning — with deadlines front and center.' },
-            ].map(({ num, title, desc }) => (
-              <div key={num} className="flex flex-col gap-3">
-                <div className="flex items-center gap-3">
-                  <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-gray-900 text-xs font-bold text-white shrink-0">
-                    {num}
-                  </span>
-                  <div className="hidden sm:block flex-1 h-px bg-gray-200 last:hidden" />
-                </div>
-                <h3 className="text-sm font-semibold text-gray-900">{title}</h3>
-                <p className="text-sm text-gray-500 leading-relaxed">{desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── Pricing ── */}
-      <section id="pricing" className="border-t border-gray-100">
-        <div className="max-w-md mx-auto px-4 sm:px-6 py-20 text-center">
-          <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">One plan. No surprises.</h2>
-          <p className="text-sm text-gray-400 mb-10">Everything you need to win federal contracts.</p>
-
-          <div className="border border-gray-200 rounded-2xl p-8 text-left">
-            <div className="mb-6">
-              <span className="text-4xl font-bold text-gray-900">$49</span>
-              <span className="text-gray-400 text-sm ml-1">/month</span>
-            </div>
-
-            <p className="text-sm font-medium text-green-600 mb-8">14-day free trial — no charge today</p>
-
-            <ul className="space-y-3 mb-8">
-              {[
-                'Daily SAM.gov digest',
-                'NAICS + keyword filtering',
-                'Pipeline tracking dashboard',
-                'Deadline alerts',
-                'Cancel anytime',
-              ].map((feature) => (
-                <li key={feature} className="flex items-center gap-2.5 text-sm text-gray-700">
-                  <IconCheck />
-                  {feature}
-                </li>
-              ))}
-            </ul>
-
-            <Link
-              href="/signup"
-              className="block w-full rounded-lg bg-gray-900 px-6 py-3 text-center text-sm font-semibold text-white hover:bg-gray-700 transition-colors"
-            >
-              Start free trial
-            </Link>
-          </div>
+          <Link
+            href="/signup"
+            className="inline-block rounded-lg bg-gray-900 px-8 py-3 text-sm font-semibold text-white hover:bg-gray-700 transition-colors"
+          >
+            Start free — 14 days on us
+          </Link>
+          <p className="mt-4 text-xs text-gray-400">$49/mo after trial. Cancel anytime.</p>
         </div>
       </section>
 
       {/* ── Footer ── */}
       <footer className="border-t border-gray-100">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
-          <span className="text-sm font-semibold text-gray-900">fedscout</span>
+          <Link href="/" className="text-sm font-semibold text-gray-900 hover:text-gray-600 transition-colors">fedscout</Link>
           <div className="flex items-center gap-5">
             <Link href="/privacy" className="text-xs text-gray-400 hover:text-gray-600 transition-colors">Privacy</Link>
             <Link href="/terms" className="text-xs text-gray-400 hover:text-gray-600 transition-colors">Terms</Link>
