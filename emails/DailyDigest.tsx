@@ -149,7 +149,7 @@ export default function DailyDigest({
     <Html lang="en">
       <Head />
       <Preview>
-        {count} new government contract {count === 1 ? 'opportunity' : 'opportunities'} matching your profile
+        {`${count} new government contract ${count === 1 ? 'opportunity' : 'opportunities'} matching your profile`}
       </Preview>
       <Body style={bodyStyle}>
         <Container style={containerStyle}>
