@@ -35,12 +35,12 @@ function ProgressBar({ step, total }: { step: number; total: number }) {
   return (
     <div className="mb-8">
       <div className="flex items-center justify-between mb-2">
-        <span className="text-sm font-medium text-gray-500">Step {step} of {total}</span>
-        <span className="text-sm text-gray-400">{Math.round((step / total) * 100)}%</span>
+        <span className="text-xs text-gray-400">Step {step} of {total}</span>
+        <span className="text-xs text-gray-400">{Math.round((step / total) * 100)}%</span>
       </div>
-      <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+      <div className="h-1 bg-gray-100 rounded-full overflow-hidden">
         <div
-          className="h-full bg-blue-600 rounded-full transition-all duration-500"
+          className="h-full bg-gray-900 rounded-full transition-all duration-500"
           style={{ width: `${(step / total) * 100}%` }}
         />
       </div>
@@ -98,7 +98,7 @@ function StepNaics({
         placeholder="Search NAICS codes…"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+        className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900"
       />
 
       <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
@@ -141,7 +141,7 @@ function StepNaics({
             onChange={(e) => { setCustomCode(e.target.value); setCustomError('') }}
             onKeyDown={(e) => e.key === 'Enter' && addCustom()}
             maxLength={6}
-            className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900"
           />
           <button
             type="button"
@@ -217,7 +217,7 @@ function StepKeywords({
           placeholder="e.g. cybersecurity, IT support, network infrastructure, cloud migration"
           value={keywords}
           onChange={(e) => onKeywordsChange(e.target.value)}
-          className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none"
+          className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900 resize-none"
         />
         <p className="text-xs text-gray-400">
           {keywords
@@ -239,7 +239,7 @@ function StepKeywords({
                 key={a}
                 className={`flex items-center justify-center rounded-lg border py-2.5 text-sm font-medium cursor-pointer transition-colors ${
                   checked
-                    ? 'border-blue-500 bg-blue-50 text-blue-700'
+                    ? 'border-gray-900 bg-gray-900 text-white'
                     : 'border-gray-200 text-gray-600 hover:border-gray-300'
                 }`}
               >
@@ -290,7 +290,7 @@ function StepContractSize({
             onAnySizeChange(e.target.checked)
             if (e.target.checked) onSelectIndex(null)
           }}
-          className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+          className="h-4 w-4 rounded border-gray-300 text-gray-900 focus:ring-gray-900"
         />
         <span className="text-sm font-medium text-gray-700">Any size — show me all contracts</span>
       </label>
@@ -341,7 +341,7 @@ function SuccessScreen({ onClick }: { onClick: () => void }) {
       <button
         type="button"
         onClick={onClick}
-        className="rounded-lg bg-blue-600 px-6 py-3 text-sm font-semibold text-white hover:bg-blue-700"
+        className="rounded-lg bg-gray-900 px-6 py-3 text-sm font-semibold text-white hover:bg-gray-700 transition-colors"
       >
         Go to dashboard →
       </button>
@@ -403,7 +403,7 @@ export default function OnboardingWizard() {
   if (done) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
-        <div className="w-full max-w-lg bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
+        <div className="w-full max-w-lg bg-white rounded-2xl shadow-sm border border-gray-100 p-10">
           <SuccessScreen onClick={() => router.push('/pricing')} />
         </div>
       </div>
@@ -422,9 +422,9 @@ export default function OnboardingWizard() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-12">
-      <div className="w-full max-w-lg bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
-        <div className="mb-2">
-          <span className="text-xs font-semibold uppercase tracking-widest text-blue-600">
+      <div className="w-full max-w-lg bg-white rounded-2xl shadow-sm border border-gray-100 p-10">
+        <div className="mb-1">
+          <span className="text-xs font-semibold uppercase tracking-widest text-gray-400">
             fedscout setup
           </span>
         </div>
@@ -480,7 +480,7 @@ export default function OnboardingWizard() {
               type="button"
               onClick={isLastStep ? handleFinish : handleNext}
               disabled={!canAdvance() || saving}
-              className="rounded-lg bg-blue-600 px-6 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-40 transition-colors"
+              className="rounded-lg bg-gray-900 px-6 py-2.5 text-sm font-semibold text-white hover:bg-gray-700 disabled:opacity-40 transition-colors"
             >
               {saving ? 'Saving…' : isLastStep ? 'Finish' : 'Continue →'}
             </button>
