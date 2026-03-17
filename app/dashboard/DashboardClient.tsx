@@ -272,7 +272,7 @@ export default function DashboardClient({
             >
               How it works
             </Link>
-            <Link href="/pricing" className="hidden md:block text-xs transition-colors" style={{ color: '#475569' }}
+            <Link href="/#pricing" className="hidden md:block text-xs transition-colors" style={{ color: '#475569' }}
               onMouseEnter={e => (e.currentTarget.style.color = '#64748b')}
               onMouseLeave={e => (e.currentTarget.style.color = '#475569')}
             >

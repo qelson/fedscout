@@ -398,7 +398,7 @@ export default function SettingsClient({
           </div>
         ) : (
           <a
-            href="/pricing"
+            href="/#pricing"
             className="inline-block rounded-lg bg-gray-900 px-5 py-2 text-sm font-semibold text-white hover:bg-gray-700 transition-colors"
           >
             Start free trial

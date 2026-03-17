@@ -15,7 +15,7 @@ export default function Home() {
 
           <nav className="flex items-center gap-5">
             <a href="#how-it-works" className="hidden md:block text-sm text-slate-400 hover:text-slate-200 transition-colors">How it works</a>
-            <Link href="/pricing" className="hidden md:block text-sm text-slate-400 hover:text-slate-200 transition-colors">Pricing</Link>
+            <a href="/#pricing" className="hidden md:block text-sm text-slate-400 hover:text-slate-200 transition-colors">Pricing</a>
             <Link href="/login" className="hidden md:block text-sm text-slate-400 hover:text-slate-200 transition-colors">Sign in</Link>
             <Link
               href="/quiz"
@@ -313,6 +313,50 @@ export default function Home() {
               </ul>
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* ── Pricing ── */}
+      <section id="pricing" className="border-t py-16 px-8" style={{ backgroundColor: '#0a0f1e', borderColor: '#1e293b' }}>
+        <div className="max-w-2xl mx-auto text-center">
+          <p className="text-xs font-bold tracking-widest mb-3" style={{ color: '#475569' }}>PRICING</p>
+          <h2 className="text-3xl font-extrabold tracking-tight text-slate-100 mb-3">One plan. No surprises.</h2>
+          <p className="text-sm text-slate-500 mb-10">Everything you need to win more federal contracts.</p>
+
+          <div className="max-w-sm mx-auto rounded-2xl border p-8 text-left" style={{ backgroundColor: '#0f172a', borderColor: '#1e293b' }}>
+            <div className="flex items-end gap-1 mb-2">
+              <span className="text-5xl font-extrabold text-white">$49</span>
+              <span className="text-lg text-slate-500 mb-1">/month</span>
+            </div>
+            <p className="text-sm font-semibold text-green-400 mt-2 mb-6">14-day free trial — no charge today</p>
+
+            <ul className="space-y-3">
+              {[
+                'Tailored contract matches based on your business profile',
+                'Daily digest of new SAM.gov opportunities',
+                'Filter by NAICS code, agency, and keywords',
+                'Pipeline tracking — Pursuing, Interested, Pass',
+                'Deadline alerts so you never miss a cutoff',
+                'Cancel anytime',
+              ].map((f) => (
+                <li key={f} className="flex items-start gap-2.5">
+                  <svg className="h-4 w-4 mt-0.5 shrink-0 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                  <span className="text-sm text-slate-300">{f}</span>
+                </li>
+              ))}
+            </ul>
+
+            <Link
+              href="/quiz"
+              className="mt-8 block w-full rounded-xl py-3 text-center text-sm font-bold text-white transition-colors bg-red-700 hover:bg-red-600"
+            >
+              Start free trial →
+            </Link>
+          </div>
+
+          <p className="text-xs text-slate-600 mt-6">GovWin IQ starts at $13,000/year. FedScout is $49/month.</p>
         </div>
       </section>
 

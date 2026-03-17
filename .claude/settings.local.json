@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/Users/qalad/Desktop/**)",
+      "Bash(cp -r contractpulse/. fedscout/ --exclude='.git')",
+      "Bash(rsync -a --exclude='.git' contractpulse/ fedscout/)",
+      "Bash(powershell -Command \"robocopy ''C:\\\\Users\\\\qalad\\\\Desktop\\\\contractpulse'' ''C:\\\\Users\\\\qalad\\\\Desktop\\\\fedscout'' /E /XD ''.git'' /NFL /NDL /NJH /NJS; exit 0\")",
+      "Bash(powershell -Command \"Remove-Item -Recurse -Force ''C:\\\\Users\\\\qalad\\\\Desktop\\\\contractpulse''\")",
+      "Bash(echo \"contractpulse gone: $?\")",
+      "Bash(npm install:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)"
+    ]
+  }
+}
