@@ -49,7 +49,8 @@ function parseIsoDate(val: string | undefined): string | null {
 function normalizeOpportunity(raw: SamApiOpportunity): SamOpportunity | null {
   if (!raw.noticeId || !raw.title) return null
 
-  const estimatedValue = raw.award?.amount ?? raw.estimatedTotalValue ?? null
+  const rawValue = raw.award?.amount ?? raw.estimatedTotalValue ?? null
+  const estimatedValue = rawValue !== null ? Math.round(Number(rawValue)) : null
 
   return {
     sam_notice_id: raw.noticeId,
