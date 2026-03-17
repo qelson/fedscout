@@ -42,7 +42,7 @@ export default function Home() {
             <Link href="/pricing" className="hidden md:block text-sm text-gray-500 hover:text-gray-900 transition-colors">Pricing</Link>
             <Link href="/login" className="hidden md:block text-sm text-gray-500 hover:text-gray-900 transition-colors">Sign in</Link>
             <Link
-              href="/signup"
+              href="/quiz"
               className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white hover:bg-gray-700 transition-colors"
             >
               Start free trial
@@ -67,7 +67,7 @@ export default function Home() {
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-14">
           <Link
-            href="/signup"
+            href="/quiz"
             className="w-full sm:w-auto rounded-lg bg-gray-900 px-7 py-3 text-sm font-semibold text-white hover:bg-gray-700 transition-colors"
           >
             Find my opportunities →
@@ -185,7 +185,7 @@ export default function Home() {
             Join contractors who use FedScout to stay ahead of SAM.gov.
           </p>
           <Link
-            href="/signup"
+            href="/quiz"
             className="inline-block rounded-lg bg-gray-900 px-8 py-3 text-sm font-semibold text-white hover:bg-gray-700 transition-colors"
           >
             Start free — 14 days on us
