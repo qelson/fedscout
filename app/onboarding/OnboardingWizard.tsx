@@ -325,7 +325,7 @@ function StepContractSize({
 
 // ─── Success Screen ───────────────────────────────────────────────────────────
 
-function SuccessScreen() {
+function SuccessScreen({ onClick }: { onClick: () => void }) {
   return (
     <div className="text-center space-y-4 py-6">
       <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
@@ -337,7 +337,14 @@ function SuccessScreen() {
       <p className="text-gray-500 text-sm max-w-xs mx-auto">
         Your first digest will arrive tomorrow morning. In the meantime, explore what&apos;s already available on your dashboard.
       </p>
-      <p className="text-xs text-gray-400">Redirecting you to complete setup...</p>
+      <p className="text-xs text-gray-400">Your preferences have been saved.</p>
+      <button
+        type="button"
+        onClick={onClick}
+        className="rounded-lg bg-blue-600 px-6 py-3 text-sm font-semibold text-white hover:bg-blue-700"
+      >
+        Go to dashboard →
+      </button>
     </div>
   )
 }
@@ -391,14 +398,13 @@ export default function OnboardingWizard() {
     }
 
     setDone(true)
-    setTimeout(() => router.push('/pricing'), 5000)
   }
 
   if (done) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
         <div className="w-full max-w-lg bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
-          <SuccessScreen />
+          <SuccessScreen onClick={() => router.push('/pricing')} />
         </div>
       </div>
     )
