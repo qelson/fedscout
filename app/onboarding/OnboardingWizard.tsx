@@ -337,7 +337,7 @@ function SuccessScreen() {
       <p className="text-gray-500 text-sm max-w-xs mx-auto">
         Your first digest will arrive tomorrow morning. In the meantime, explore what&apos;s already available on your dashboard.
       </p>
-      <p className="text-xs text-gray-400">Redirecting you now…</p>
+      <p className="text-xs text-gray-400">Redirecting you to complete setup...</p>
     </div>
   )
 }
@@ -391,7 +391,7 @@ export default function OnboardingWizard() {
     }
 
     setDone(true)
-    setTimeout(() => router.push('/pricing'), 2500)
+    setTimeout(() => router.push('/pricing'), 5000)
   }
 
   if (done) {
