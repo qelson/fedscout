@@ -266,19 +266,6 @@ export default function DashboardClient({
 
           {/* Right */}
           <div className="flex items-center gap-4">
-            <Link href="/" className="hidden md:block text-xs transition-colors" style={{ color: '#475569' }}
-              onMouseEnter={e => (e.currentTarget.style.color = '#64748b')}
-              onMouseLeave={e => (e.currentTarget.style.color = '#475569')}
-            >
-              How it works
-            </Link>
-            <Link href="/#pricing" className="hidden md:block text-xs transition-colors" style={{ color: '#475569' }}
-              onMouseEnter={e => (e.currentTarget.style.color = '#64748b')}
-              onMouseLeave={e => (e.currentTarget.style.color = '#475569')}
-            >
-              Pricing
-            </Link>
-
             <span className="hidden sm:block text-xs" style={{ color: '#475569' }}>{email}</span>
 
             {/* Avatar */}
