@@ -151,7 +151,6 @@ export default function DashboardClient({
   email: string
 }) {
   const [, startTransition] = useTransition()
-  const [lightMode, setLightMode] = useState(false)
 
   // Optimistic status map: oppId → status
   const [statuses, setStatuses] = useState<Record<string, OppStatus | null>>(() =>
@@ -168,11 +167,6 @@ export default function DashboardClient({
     startTransition(async () => {
       if (next) await updateOpportunityStatus(oppId, next)
     })
-  }
-
-  function toggleTheme() {
-    setLightMode((v) => !v)
-    document.documentElement.classList.toggle('light')
   }
 
   // ── Derived stats ─────────────────────────────────────────────────────────
@@ -246,7 +240,7 @@ export default function DashboardClient({
         <div className="max-w-7xl mx-auto px-6 h-full flex items-center justify-between">
           {/* Left: logo + nav tabs */}
           <div className="flex items-center h-full">
-            <Link href="/" className="text-lg font-extrabold tracking-tight mr-6">
+            <Link href="/" className="text-2xl font-extrabold tracking-tight mr-6">
               <span className="text-white">Fed</span><span style={{ color: '#ef4444' }}>Scout</span>
             </Link>
             <nav className="flex items-center h-full">
@@ -284,24 +278,6 @@ export default function DashboardClient({
             >
               Pricing
             </Link>
-
-            {/* Theme toggle */}
-            <button
-              type="button"
-              onClick={toggleTheme}
-              className="relative rounded-full border cursor-pointer flex-shrink-0"
-              style={{ width: '2.25rem', height: '1.25rem', backgroundColor: '#1e293b', borderColor: '#334155' }}
-              title="Toggle theme"
-            >
-              <span
-                className="absolute top-0.5 rounded-full transition-all"
-                style={{
-                  width: '0.875rem', height: '0.875rem',
-                  backgroundColor: '#f1f5f9',
-                  left: lightMode ? '0.25rem' : 'calc(100% - 1.125rem)',
-                }}
-              />
-            </button>
 
             <span className="hidden sm:block text-xs" style={{ color: '#475569' }}>{email}</span>
 

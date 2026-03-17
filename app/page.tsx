@@ -9,7 +9,7 @@ export default function Home() {
       {/* ── Navbar ── */}
       <header className="sticky top-0 z-50 border-b" style={{ backgroundColor: '#0a0f1e', borderColor: '#1e293b' }}>
         <div className="max-w-7xl mx-auto px-6 sm:px-8 h-14 flex items-center justify-between">
-          <Link href="/" className="text-lg font-bold tracking-tight">
+          <Link href="/" className="text-2xl font-extrabold tracking-tight">
             <span className="text-white">Fed</span><span style={{ color: '#ef4444' }}>Scout</span>
           </Link>
 
@@ -17,8 +17,6 @@ export default function Home() {
             <a href="#how-it-works" className="hidden md:block text-sm text-slate-400 hover:text-slate-200 transition-colors">How it works</a>
             <Link href="/pricing" className="hidden md:block text-sm text-slate-400 hover:text-slate-200 transition-colors">Pricing</Link>
             <Link href="/login" className="hidden md:block text-sm text-slate-400 hover:text-slate-200 transition-colors">Sign in</Link>
-            {/* Theme toggle pill — visual only */}
-            <div className="hidden md:block w-8 h-4 rounded-full border cursor-pointer" style={{ backgroundColor: '#1e293b', borderColor: '#334155' }} />
             <Link
               href="/quiz"
               className="rounded-md px-4 py-2 text-sm font-semibold text-white transition-colors bg-red-700 hover:bg-red-800"
@@ -35,12 +33,6 @@ export default function Home() {
 
           {/* Left column */}
           <div className="pb-10 lg:pb-14">
-            {/* Eyebrow badge */}
-            <div className="inline-flex items-center gap-2 rounded-full border px-3 py-1 mb-6" style={{ borderColor: '#334155', backgroundColor: '#0f172a' }}>
-              <span className="h-1.5 w-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: '#ef4444' }} />
-              <span className="text-xs text-slate-400">SAM.gov intelligence for small contractors</span>
-            </div>
-
             <h1 className="text-4xl sm:text-5xl font-extrabold text-slate-50 leading-tight tracking-tight mb-5">
               Stop losing contracts<br />
               to companies that<br />

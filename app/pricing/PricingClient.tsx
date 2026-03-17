@@ -35,11 +35,16 @@ const COMPARISON = [
   { feature: 'SMB-friendly pricing',          fedscout: true,  govwin: false },
 ]
 
-export default function PricingClient() {
+export default function PricingClient({ isLoggedIn }: { isLoggedIn: boolean }) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   async function handleStartTrial() {
+    if (!isLoggedIn) {
+      window.location.href = '/login'
+      return
+    }
+
     setLoading(true)
     setError(null)
 
@@ -61,7 +66,7 @@ export default function PricingClient() {
       {/* ── Nav ── */}
       <header className="border-b border-gray-100">
         <div className="max-w-2xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
-          <Link href="/" className="text-base font-semibold tracking-tight text-gray-900 hover:text-gray-600 transition-colors">
+          <Link href="/" className="text-2xl font-extrabold tracking-tight text-gray-900 hover:text-gray-600 transition-colors">
             fedscout
           </Link>
           <Link href="/login" className="text-sm text-gray-500 hover:text-gray-900 transition-colors">

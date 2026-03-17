@@ -15,7 +15,7 @@ function CheckIcon() {
 function LeftPanel() {
   return (
     <div className="hidden lg:flex lg:w-1/2 flex-col justify-between bg-gray-950 p-10">
-      <Link href="/" className="text-white text-base font-semibold tracking-tight hover:text-gray-300 transition-colors">fedscout</Link>
+      <Link href="/" className="text-white text-2xl font-extrabold tracking-tight hover:text-gray-300 transition-colors">fedscout</Link>
       <div className="space-y-8">
         <h2 className="text-3xl font-bold text-white leading-snug">
           Never miss a government<br />contract again.
@@ -58,7 +58,7 @@ export default function LoginPage() {
 
       <div className="flex flex-1 flex-col justify-center px-6 py-12 lg:px-16">
         <div className="lg:hidden mb-8">
-          <Link href="/" className="text-base font-semibold tracking-tight text-gray-900 hover:text-gray-600 transition-colors">fedscout</Link>
+          <Link href="/" className="text-2xl font-extrabold tracking-tight text-gray-900 hover:text-gray-600 transition-colors">fedscout</Link>
         </div>
 
         <div className="w-full max-w-sm mx-auto space-y-6">
