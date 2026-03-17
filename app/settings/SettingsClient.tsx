@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { savePreferences } from '@/app/onboarding/actions'
+import { sendTestDigest } from './actions'
 import { UserPreferences } from '@/lib/types'
 
 const NAICS_OPTIONS = [
@@ -59,6 +60,9 @@ export default function SettingsClient({
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  const [testSending, setTestSending] = useState(false)
+  const [testResult, setTestResult] = useState<{ ok: boolean; message: string } | null>(null)
+
   // ── NAICS helpers ────────────────────────────────────────────────────────
   const filteredNaics = NAICS_OPTIONS.filter(
     (o) =>
@@ -88,6 +92,22 @@ export default function SettingsClient({
     setAgencies((prev) =>
       prev.includes(a) ? prev.filter((x) => x !== a) : [...prev, a]
     )
+  }
+
+  // ── Test digest ──────────────────────────────────────────────────────────
+  async function handleTestDigest() {
+    setTestSending(true)
+    setTestResult(null)
+    const result = await sendTestDigest()
+    setTestSending(false)
+    if (result?.error) {
+      setTestResult({ ok: false, message: result.error })
+    } else {
+      setTestResult({
+        ok: true,
+        message: `Sent! Check your inbox — ${result.opportunityCount} ${result.opportunityCount === 1 ? 'opportunity' : 'opportunities'} included.`,
+      })
+    }
   }
 
   // ── Save ─────────────────────────────────────────────────────────────────
@@ -309,6 +329,31 @@ export default function SettingsClient({
         {saved && <span className="text-sm text-green-600">Saved!</span>}
         {error && <span className="text-sm text-red-600">{error}</span>}
       </div>
+
+      <hr className="border-gray-100" />
+
+      {/* ── Test digest ── */}
+      <section className="space-y-2">
+        <h2 className="text-base font-semibold text-gray-900">Email digest</h2>
+        <p className="text-sm text-gray-500">
+          Send a preview digest to your email right now using your current preferences.
+        </p>
+        <div className="flex items-center gap-3 pt-1">
+          <button
+            type="button"
+            onClick={handleTestDigest}
+            disabled={testSending}
+            className="rounded-lg border border-gray-300 px-5 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-40 transition-colors"
+          >
+            {testSending ? 'Sending…' : 'Send test digest'}
+          </button>
+          {testResult && (
+            <span className={`text-sm ${testResult.ok ? 'text-green-600' : 'text-red-600'}`}>
+              {testResult.message}
+            </span>
+          )}
+        </div>
+      </section>
     </div>
   )
 }
