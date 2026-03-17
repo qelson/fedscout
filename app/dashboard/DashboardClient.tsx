@@ -208,7 +208,16 @@ export default function DashboardClient({
       </div>
 
       {/* Cards */}
-      {visible.length === 0 ? (
+      {opportunities.length === 0 ? (
+        <div className="py-20 text-center">
+          <p className="text-gray-500">We&apos;re still loading contracts for your profile.</p>
+          <p className="mt-1 text-sm text-gray-400">
+            Check back in a few hours — or head to{' '}
+            <a href="/settings" className="text-blue-600 hover:underline">Settings</a>{' '}
+            to broaden your keywords.
+          </p>
+        </div>
+      ) : visible.length === 0 ? (
         <div className="py-20 text-center">
           <p className="text-gray-500">No matching opportunities found.</p>
           <p className="mt-1 text-sm text-gray-400">
