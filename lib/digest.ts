@@ -3,7 +3,7 @@
  * Used by both /api/send-digest (batch) and sendTestDigest (single user).
  */
 import { Resend } from 'resend'
-import { render } from '@react-email/components'
+import { render } from '@react-email/render'
 import DailyDigest from '@/emails/DailyDigest'
 import { UserPreferences } from '@/lib/types'
 import { SupabaseClient } from '@supabase/supabase-js'
