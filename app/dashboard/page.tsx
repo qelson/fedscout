@@ -80,7 +80,7 @@ export default async function DashboardPage() {
       {/* Top bar */}
       <header className="sticky top-0 z-10 bg-white border-b border-gray-200">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
-          <span className="text-base font-semibold text-gray-900 tracking-tight">fedscout</span>
+          <Link href="/" className="text-base font-semibold text-gray-900 tracking-tight hover:text-gray-600 transition-colors">fedscout</Link>
           <div className="flex items-center gap-3">
             <span className="text-sm text-gray-400 hidden sm:block">{user.email}</span>
             <Link
