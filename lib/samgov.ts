@@ -88,7 +88,7 @@ export async function fetchOpportunities(
     postedTo,
     limit: String(limit),
     offset: '0',
-    ptype: 'o,k,p,r,s,g,i,a,u,j,m',  // all notice types
+    ptype: 'p,k,r,g,s,i,u,a',
   })
 
   if (naicsCode) {
