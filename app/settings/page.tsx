@@ -15,19 +15,19 @@ export default async function SettingsPage() {
   ])
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="sticky top-0 z-10 bg-white border-b border-gray-200">
+    <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-primary)' }}>
+      <header className="sticky top-0 z-10 border-b" style={{ backgroundColor: 'var(--bg-secondary)', borderColor: 'var(--border)' }}>
         <div className="max-w-5xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Link href="/dashboard" className="text-gray-400 hover:text-gray-600 transition-colors">
+            <Link href="/dashboard" className="text-slate-400 hover:text-slate-200 transition-colors">
               ← Back
             </Link>
-            <span className="text-base font-semibold text-gray-900">Settings</span>
+            <span className="text-base font-semibold text-slate-100">Settings</span>
           </div>
           <div className="flex items-center gap-3">
-            <span className="text-sm text-gray-400 hidden sm:block">{user.email}</span>
+            <span className="text-sm text-slate-400 hidden sm:block">{user.email}</span>
             <form action={logout}>
-              <button type="submit" className="text-sm text-gray-500 hover:text-gray-800 transition-colors">
+              <button type="submit" className="text-sm text-slate-400 hover:text-slate-200 transition-colors">
                 Sign out
               </button>
             </form>

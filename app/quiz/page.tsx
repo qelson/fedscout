@@ -202,9 +202,9 @@ export default function QuizPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white flex flex-col">
+    <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--bg-primary)' }}>
       {/* Nav */}
-      <header className="border-b border-gray-100 shrink-0">
+      <header className="border-b shrink-0" style={{ borderColor: 'var(--border)' }}>
         <div className="max-w-2xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
           <Link href="/" className="text-2xl font-extrabold tracking-tight text-gray-900 hover:text-gray-600 transition-colors">
             fedscout
