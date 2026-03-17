@@ -1,49 +1,30 @@
 import Link from 'next/link'
 
-// ─── Icons ────────────────────────────────────────────────────────────────────
-
-function IconMail() {
-  return (
-    <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25H4.5a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5H4.5a2.25 2.25 0 00-2.25 2.25m19.5 0l-9.75 6.75L2.25 6.75" />
-    </svg>
-  )
-}
-
-function IconFilter() {
-  return (
-    <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75" />
-    </svg>
-  )
-}
-
-function IconChart() {
-  return (
-    <svg className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zm6.75-6.375C9.75 6.129 10.254 5.625 10.875 5.625h2.25c.621 0 1.125.504 1.125 1.125v13.125c0 .621-.504 1.125-1.125 1.125h-2.25A1.125 1.125 0 019.75 19.875V6.75zm6.75 4.5c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v8.625c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V11.25z" />
-    </svg>
-  )
-}
-
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-white text-gray-900">
+    <div className="min-h-screen text-slate-100" style={{ backgroundColor: '#0a0f1e' }}>
 
       {/* ── Navbar ── */}
-      <header className="sticky top-0 z-50 bg-white border-b border-gray-200">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
-          <Link href="/" className="text-base font-semibold tracking-tight text-gray-900 hover:text-gray-600 transition-colors">fedscout</Link>
+      <header className="sticky top-0 z-50 border-b" style={{ backgroundColor: '#0a0f1e', borderColor: '#1e293b' }}>
+        <div className="max-w-7xl mx-auto px-6 sm:px-8 h-14 flex items-center justify-between">
+          <Link href="/" className="text-lg font-bold tracking-tight">
+            <span className="text-white">Fed</span><span style={{ color: '#ef4444' }}>Scout</span>
+          </Link>
 
-          <nav className="flex items-center gap-6">
-            <a href="#how-it-works" className="hidden md:block text-sm text-gray-500 hover:text-gray-900 transition-colors">How it works</a>
-            <Link href="/pricing" className="hidden md:block text-sm text-gray-500 hover:text-gray-900 transition-colors">Pricing</Link>
-            <Link href="/login" className="hidden md:block text-sm text-gray-500 hover:text-gray-900 transition-colors">Sign in</Link>
+          <nav className="flex items-center gap-5">
+            <a href="#how-it-works" className="hidden md:block text-sm text-slate-400 hover:text-slate-200 transition-colors">How it works</a>
+            <Link href="/pricing" className="hidden md:block text-sm text-slate-400 hover:text-slate-200 transition-colors">Pricing</Link>
+            <Link href="/login" className="hidden md:block text-sm text-slate-400 hover:text-slate-200 transition-colors">Sign in</Link>
+            {/* Theme toggle pill — visual only */}
+            <div className="hidden md:block w-8 h-4 rounded-full border cursor-pointer" style={{ backgroundColor: '#1e293b', borderColor: '#334155' }} />
             <Link
               href="/quiz"
-              className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white hover:bg-gray-700 transition-colors"
+              className="rounded-md px-4 py-2 text-sm font-semibold text-white transition-colors"
+              style={{ backgroundColor: '#B91C1C' }}
+              onMouseOver={e => (e.currentTarget.style.backgroundColor = '#991b1b')}
+              onMouseOut={e => (e.currentTarget.style.backgroundColor = '#B91C1C')}
             >
               Start free trial
             </Link>
@@ -52,157 +33,334 @@ export default function Home() {
       </header>
 
       {/* ── Hero ── */}
-      <section className="max-w-2xl mx-auto px-4 sm:px-6 pt-24 pb-20 text-center">
-        <div className="inline-block rounded-full bg-blue-50 px-3 py-1 mb-6">
-          <p className="text-xs font-semibold uppercase tracking-widest text-blue-600">
-            Built for small government contractors
-          </p>
-        </div>
-        <h1 className="text-4xl sm:text-5xl font-bold tracking-tight leading-tight text-gray-900 mb-6">
-          Your next federal contract is already on SAM.gov. Are you seeing it?
-        </h1>
-        <p className="text-lg text-gray-500 leading-relaxed mb-10">
-          FedScout learns your business profile and surfaces the contracts most likely to win — delivered to your inbox before the deadline.
-        </p>
+      <section className="max-w-7xl mx-auto px-6 sm:px-8 pt-14 pb-0">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-end">
 
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-14">
-          <Link
-            href="/quiz"
-            className="w-full sm:w-auto rounded-lg bg-gray-900 px-7 py-3 text-sm font-semibold text-white hover:bg-gray-700 transition-colors"
-          >
-            Find my opportunities →
-          </Link>
-          <a
-            href="#how-it-works"
-            className="w-full sm:w-auto rounded-lg border border-gray-300 px-7 py-3 text-sm font-semibold text-gray-700 hover:border-gray-400 hover:text-gray-900 transition-colors"
-          >
-            See how it works
-          </a>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 border-t border-gray-100 pt-10">
-          {[
-            { stat: '$600B+', label: 'in federal contracts annually' },
-            { stat: '$49/mo', label: 'vs $29k/yr for GovWin' },
-            { stat: 'Daily', label: 'tailored opportunity picks' },
-          ].map(({ stat, label }) => (
-            <div key={stat} className="text-center">
-              <p className="text-2xl font-bold text-gray-900">{stat}</p>
-              <p className="mt-1 text-sm text-gray-400">{label}</p>
+          {/* Left column */}
+          <div className="pb-10 lg:pb-14">
+            {/* Eyebrow badge */}
+            <div className="inline-flex items-center gap-2 rounded-full border px-3 py-1 mb-6" style={{ borderColor: '#334155', backgroundColor: '#0f172a' }}>
+              <span className="h-1.5 w-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: '#ef4444' }} />
+              <span className="text-xs text-slate-400">SAM.gov intelligence for small contractors</span>
             </div>
-          ))}
+
+            <h1 className="text-4xl sm:text-5xl font-extrabold text-slate-50 leading-tight tracking-tight mb-5">
+              Stop losing contracts<br />
+              to companies that<br />
+              <span style={{ color: '#93c5fd' }}>just showed up first</span>
+            </h1>
+
+            <p className="text-sm text-slate-500 leading-relaxed max-w-sm mb-8">
+              FedScout monitors every federal contract on SAM.gov and sends you the ones that match your business — every morning before your competition sees them.
+            </p>
+
+            <div className="flex flex-col sm:flex-row gap-3 mb-8">
+              <Link
+                href="/quiz"
+                className="inline-flex items-center justify-center rounded-md px-6 py-2.5 text-sm font-bold text-white transition-colors"
+                style={{ backgroundColor: '#B91C1C' }}
+                onMouseOver={e => (e.currentTarget.style.backgroundColor = '#991b1b')}
+                onMouseOut={e => (e.currentTarget.style.backgroundColor = '#B91C1C')}
+              >
+                Find my contracts →
+              </Link>
+              <a
+                href="#how-it-works"
+                className="inline-flex items-center justify-center rounded-md border px-6 py-2.5 text-sm text-slate-400 hover:text-slate-200 hover:border-slate-500 transition-colors"
+                style={{ borderColor: '#334155' }}
+              >
+                See how it works
+              </a>
+            </div>
+
+            {/* Social proof */}
+            <div className="flex items-center gap-3">
+              <div className="flex -space-x-2">
+                {[['JT', '1e3a8a'], ['MR', '1e3a8a'], ['SK', '1e3a8a']].map(([initials, bg]) => (
+                  <div
+                    key={initials}
+                    className="h-7 w-7 rounded-full border-2 flex items-center justify-center text-xs font-bold text-white flex-shrink-0"
+                    style={{ backgroundColor: `#${bg}`, borderColor: '#0a0f1e' }}
+                  >
+                    {initials}
+                  </div>
+                ))}
+              </div>
+              <span className="text-xs text-slate-500">Join 200+ contractors already using FedScout</span>
+            </div>
+          </div>
+
+          {/* Right column — email preview */}
+          <div className="hidden lg:block self-end">
+            <div className="rounded-t-xl border border-b-0 p-4 translate-y-px" style={{ backgroundColor: '#0f172a', borderColor: '#1e293b' }}>
+              {/* Toolbar */}
+              <div className="flex items-center justify-between rounded-md px-3 py-2 mb-3 text-xs text-slate-500" style={{ backgroundColor: '#1e293b' }}>
+                <span>📧 Inbox</span>
+                <span>Today, 8:04 AM</span>
+              </div>
+
+              {/* Subject */}
+              <p className="text-sm font-bold text-slate-100 mb-1">Your FedScout digest — 5 new matches</p>
+              <p className="text-xs text-slate-500 mb-3">from hello@fedscout.io · to you</p>
+              <p className="text-xs text-slate-400 mb-3">Good morning — here are today&apos;s opportunities matching your profile:</p>
+
+              {/* Opportunity rows */}
+              {[
+                {
+                  borderColor: '#B91C1C',
+                  title: 'Cybersecurity Support Services — DHS Network Operations',
+                  meta: 'Dept. of Homeland Security · Est. $2.4M',
+                  deadline: '3 days left',
+                  deadlineColor: '#f87171',
+                },
+                {
+                  borderColor: '#d97706',
+                  title: 'IT Modernization — GSA Regional Office Upgrade',
+                  meta: 'General Services Administration · Est. $850K',
+                  deadline: '11 days left',
+                  deadlineColor: '#fbbf24',
+                },
+                {
+                  borderColor: '#16a34a',
+                  title: 'Software Development Support — DoD Enterprise Systems',
+                  meta: 'Department of Defense · Est. $5.1M',
+                  deadline: 'Apr 12',
+                  deadlineColor: '#4ade80',
+                },
+              ].map(({ borderColor, title, meta, deadline, deadlineColor }) => (
+                <div
+                  key={title}
+                  className="rounded-lg p-3 mb-2 border-l-2"
+                  style={{ backgroundColor: '#1e293b', borderLeftColor: borderColor }}
+                >
+                  <p className="text-xs font-semibold text-slate-100 mb-1">{title}</p>
+                  <p className="text-xs text-slate-500 mb-2">{meta}</p>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs" style={{ color: '#93c5fd' }}>View on SAM.gov →</span>
+                    <span className="text-xs font-bold" style={{ color: deadlineColor }}>{deadline}</span>
+                  </div>
+                </div>
+              ))}
+
+              {/* Email footer */}
+              <p className="text-xs text-center mt-2" style={{ color: '#475569' }}>
+                FedScout · Manage preferences · Unsubscribe
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Stats strip ── */}
+      <div className="border-t" style={{ backgroundColor: '#060d1a', borderColor: '#1e293b' }}>
+        <div className="max-w-7xl mx-auto px-6 sm:px-8 py-4">
+          <div className="grid grid-cols-2 sm:grid-cols-4 divide-x" style={{ borderColor: '#1e293b' }}>
+            {[
+              { num: '$600B+',  label: 'Federal contracts annually' },
+              { num: '$49/mo',  label: 'vs $29k/yr for GovWin' },
+              { num: 'Daily',   label: 'Personalized opportunity picks' },
+              { num: '14 days', label: 'Free trial, no card required' },
+            ].map(({ num, label }) => (
+              <div key={num} className="px-4 sm:px-8 py-2 first:pl-0 text-center sm:text-left" style={{ borderColor: '#1e293b' }}>
+                <p className="text-xl font-extrabold text-slate-100">{num}</p>
+                <p className="text-xs mt-1" style={{ color: '#475569' }}>{label}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* ── Dashboard preview ── */}
+      <section className="border-t py-10" style={{ backgroundColor: '#0f172a', borderColor: '#1e293b' }}>
+        <div className="max-w-7xl mx-auto px-6 sm:px-8">
+          <p className="text-xs font-bold tracking-widest mb-2" style={{ color: '#475569' }}>THE DASHBOARD</p>
+          <h2 className="text-2xl font-extrabold text-slate-100 mb-2">Your pipeline, always up to date</h2>
+          <p className="text-sm text-slate-500 mb-6 max-w-lg">
+            Every contract in your digest links back to your dashboard where you can track status, deadlines, and next steps.
+          </p>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {[
+              {
+                agency: 'DHS', agencyFull: 'Homeland Security',
+                title: 'Cybersecurity Support — Network Ops Center',
+                naics: '541519', value: '$2.4M',
+                deadline: '3 days left', deadlineColor: '#f87171',
+                activeBtn: 'Pursuing', activeBtnStyle: { backgroundColor: '#1e3a8a', color: '#93c5fd' },
+              },
+              {
+                agency: 'GSA', agencyFull: 'Gen. Services Admin.',
+                title: 'IT Modernization — Regional Office Upgrade',
+                naics: '541512', value: '$850K',
+                deadline: '11 days left', deadlineColor: '#fbbf24',
+                activeBtn: 'Interested', activeBtnStyle: { backgroundColor: '#14532d', color: '#86efac' },
+              },
+              {
+                agency: 'DoD', agencyFull: 'Dept. of Defense',
+                title: 'Software Development — Enterprise Systems',
+                naics: '541511', value: '$5.1M',
+                deadline: 'Apr 12', deadlineColor: '#4ade80',
+                activeBtn: null, activeBtnStyle: {},
+              },
+            ].map(({ agency, agencyFull, title, naics, value, deadline, deadlineColor, activeBtn, activeBtnStyle }) => (
+              <div key={title} className="rounded-xl p-3 border" style={{ backgroundColor: '#1e293b', borderColor: '#334155' }}>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="rounded px-1.5 py-0.5 text-xs font-bold" style={{ backgroundColor: '#1e3a8a', color: '#93c5fd' }}>{agency}</span>
+                  <span className="text-xs" style={{ color: '#93c5fd' }}>{agencyFull}</span>
+                </div>
+                <p className="text-xs font-semibold text-slate-100 mb-1">{title}</p>
+                <p className="text-xs text-slate-500 mb-3">{naics} · Est. {value}</p>
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-xs font-bold" style={{ color: deadlineColor }}>{deadline}</span>
+                  <span className="text-sm font-extrabold text-slate-100">{value}</span>
+                </div>
+                <div className="flex gap-1.5">
+                  {['Pursuing', 'Interested', 'Pass'].map((btn) => (
+                    <button
+                      key={btn}
+                      type="button"
+                      className="rounded px-2 py-1 text-xs"
+                      style={
+                        activeBtn === btn
+                          ? activeBtnStyle
+                          : { backgroundColor: '#0f172a', color: '#64748b' }
+                      }
+                    >
+                      {btn}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
       {/* ── How it works ── */}
-      <section id="how-it-works" className="border-t border-gray-100 bg-gray-50">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 py-20">
-          <div className="text-center mb-14">
-            <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-3">
-              How FedScout works
-            </h2>
-            <p className="text-sm text-gray-500">
-              From setup to opportunities in your inbox — in minutes.
-            </p>
+      <section id="how-it-works" className="border-t py-10" style={{ backgroundColor: '#0a0f1e', borderColor: '#1e293b' }}>
+        <div className="max-w-7xl mx-auto px-6 sm:px-8">
+          <div className="text-center mb-8">
+            <p className="text-xs tracking-widest mb-2" style={{ color: '#475569' }}>HOW IT WORKS</p>
+            <h2 className="text-2xl font-extrabold text-slate-100">Up and running in 2 minutes</h2>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-10">
+          <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x" style={{ borderColor: '#1e293b' }}>
             {[
               {
                 num: '1',
-                title: 'Tell us about your business',
-                desc: 'We ask about your NAICS codes, past work, and target agencies. Takes 2 minutes.',
+                title: 'Tell us your business',
+                desc: 'Select your NAICS codes, target agencies, and keywords. We build your profile in under 2 minutes.',
               },
               {
                 num: '2',
                 title: 'We scan SAM.gov daily',
-                desc: 'Our system monitors every new federal contract posting and scores it against your profile.',
+                desc: 'Every new federal contract posting gets scored against your profile automatically. Every single day.',
               },
               {
                 num: '3',
-                title: 'Your tailored picks arrive',
-                desc: 'Every morning you get a shortlist of the contracts most relevant to your business. Not hundreds — just the right ones.',
+                title: 'Your picks hit your inbox',
+                desc: '8am every morning. A shortlist of contracts matched to your business. Not hundreds — just the right ones.',
               },
-            ].map(({ num, title, desc }, i) => (
-              <div key={num} className="relative flex flex-col gap-4">
-                {/* Connecting line (desktop only, not after last item) */}
-                {i < 2 && (
-                  <div className="hidden sm:block absolute top-4 left-[calc(50%+20px)] right-[-calc(50%-20px)] h-px bg-gray-200" style={{ left: '2.5rem', right: '-50%' }} />
-                )}
-                <div className="flex items-center gap-3">
-                  <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-gray-900 text-xs font-bold text-white shrink-0 relative z-10">
-                    {num}
-                  </span>
+            ].map(({ num, title, desc }) => (
+              <div key={num} className="px-6 py-6 first:pl-0 last:pr-0" style={{ borderColor: '#1e293b' }}>
+                <div
+                  className="h-8 w-8 rounded-full flex items-center justify-center text-xs font-extrabold text-white mb-4"
+                  style={{ backgroundColor: '#B91C1C' }}
+                >
+                  {num}
                 </div>
-                <h3 className="text-sm font-semibold text-gray-900">{title}</h3>
-                <p className="text-sm text-gray-500 leading-relaxed">{desc}</p>
+                <h3 className="text-sm font-bold text-slate-100 mb-2">{title}</h3>
+                <p className="text-sm text-slate-500 leading-relaxed">{desc}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ── Features ── */}
-      <section className="border-t border-gray-100">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-20">
-          <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-gray-100">
-            {[
-              {
-                icon: <IconMail />,
-                title: 'Tailored opportunity matching',
-                desc: 'Contracts scored and ranked for your business profile — not a raw feed of everything on SAM.gov.',
-              },
-              {
-                icon: <IconFilter />,
-                title: 'Smart filtering',
-                desc: 'Filter by NAICS code, agency, keywords, and contract value range. Only see what matters.',
-              },
-              {
-                icon: <IconChart />,
-                title: 'Pipeline tracking',
-                desc: 'Mark opportunities as Pursuing, Interested, or Pass. Track your bid pipeline in one place.',
-              },
-            ].map(({ icon, title, desc }) => (
-              <div key={title} className="px-8 py-10 first:pl-0 last:pr-0">
-                <div className="inline-flex items-center justify-center h-9 w-9 rounded-lg bg-gray-100 text-gray-600 mb-4">
-                  {icon}
-                </div>
-                <h3 className="text-base font-semibold text-gray-900 mb-2">{title}</h3>
-                <p className="text-sm text-gray-500 leading-relaxed">{desc}</p>
-              </div>
-            ))}
+      {/* ── Comparison ── */}
+      <section className="border-t py-8" style={{ backgroundColor: '#060d1a', borderColor: '#1e293b' }}>
+        <div className="max-w-7xl mx-auto px-6 sm:px-8">
+          <div className="text-center mb-6">
+            <h2 className="text-xl font-extrabold text-slate-100 mb-2">Built for small contractors GovWin ignores</h2>
+            <p className="text-sm text-slate-500">GovWin starts at $13,000/year. We&apos;re $49/month.</p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl mx-auto">
+            {/* GovWin */}
+            <div className="rounded-xl p-4 border" style={{ backgroundColor: '#1e293b', borderColor: '#334155' }}>
+              <p className="font-bold text-slate-400 mb-1">GovWin IQ</p>
+              <p className="text-2xl font-extrabold text-slate-400 mb-4">$13k–$119k/yr</p>
+              <ul className="space-y-2 text-sm text-slate-500">
+                {[
+                  { check: false, text: 'Built for large contractors' },
+                  { check: false, text: 'Complex onboarding' },
+                  { check: false, text: 'Overwhelming data' },
+                  { check: true,  text: 'Deep market intelligence' },
+                ].map(({ check, text }) => (
+                  <li key={text} className="flex items-center gap-2">
+                    {check
+                      ? <span className="text-slate-400">✓</span>
+                      : <span style={{ color: '#475569' }}>✕</span>
+                    }
+                    {text}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* FedScout */}
+            <div className="rounded-xl p-4 border" style={{ backgroundColor: '#1e3a8a', borderColor: '#1d4ed8' }}>
+              <p className="font-bold text-white mb-1">FedScout</p>
+              <p className="text-2xl font-extrabold text-white mb-4">$49/mo</p>
+              <ul className="space-y-2 text-sm" style={{ color: '#bfdbfe' }}>
+                {[
+                  'Built for 1–10 person shops',
+                  'Live in 2 minutes',
+                  'Only relevant contracts',
+                  'Daily digest to your inbox',
+                ].map((text) => (
+                  <li key={text} className="flex items-center gap-2">
+                    <span style={{ color: '#86efac' }}>✓</span>
+                    {text}
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* ── CTA ── */}
-      <section className="border-t border-gray-100 bg-gray-50">
-        <div className="max-w-xl mx-auto px-4 sm:px-6 py-20 text-center">
-          <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-3">
-            Ready to stop missing contracts?
-          </h2>
-          <p className="text-sm text-gray-500 mb-8">
-            Join contractors who use FedScout to stay ahead of SAM.gov.
-          </p>
-          <Link
-            href="/quiz"
-            className="inline-block rounded-lg bg-gray-900 px-8 py-3 text-sm font-semibold text-white hover:bg-gray-700 transition-colors"
-          >
-            Start free — 14 days on us
-          </Link>
-          <p className="mt-4 text-xs text-gray-400">$49/mo after trial. Cancel anytime.</p>
-        </div>
+      {/* ── Final CTA ── */}
+      <section className="py-10 text-center px-6 sm:px-8" style={{ backgroundColor: '#B91C1C' }}>
+        <h2 className="text-2xl font-extrabold text-white mb-2">
+          Your next contract is on SAM.gov right now.
+        </h2>
+        <p className="text-sm mb-6" style={{ color: '#fecaca' }}>
+          Start your free trial and see what you&apos;ve been missing.
+        </p>
+        <Link
+          href="/quiz"
+          className="inline-block rounded-lg px-8 py-3 text-sm font-extrabold transition-colors"
+          style={{ backgroundColor: '#ffffff', color: '#b91c1c' }}
+        >
+          Find my contracts — free for 14 days
+        </Link>
+        <p className="text-xs mt-3" style={{ color: '#fca5a5' }}>
+          $49/mo after trial. Cancel anytime. No contracts.
+        </p>
       </section>
 
       {/* ── Footer ── */}
-      <footer className="border-t border-gray-100">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
-          <Link href="/" className="text-sm font-semibold text-gray-900 hover:text-gray-600 transition-colors">fedscout</Link>
-          <div className="flex items-center gap-5">
-            <Link href="/privacy" className="text-xs text-gray-400 hover:text-gray-600 transition-colors">Privacy</Link>
-            <Link href="/terms" className="text-xs text-gray-400 hover:text-gray-600 transition-colors">Terms</Link>
+      <footer className="border-t py-5 px-6 sm:px-8" style={{ backgroundColor: '#0a0f1e', borderColor: '#1e293b' }}>
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+          <span className="font-bold text-slate-400">
+            <span className="text-white">Fed</span><span style={{ color: '#ef4444' }}>Scout</span>
+          </span>
+          <div className="flex gap-4" style={{ color: '#475569' }}>
+            <Link href="/privacy" className="hover:text-slate-400 transition-colors">Privacy</Link>
+            <Link href="/terms" className="hover:text-slate-400 transition-colors">Terms</Link>
           </div>
-          <p className="text-xs text-gray-400">&copy; 2026 FedScout</p>
+          <span style={{ color: '#475569' }}>&copy; 2026 FedScout</span>
         </div>
       </footer>
 
