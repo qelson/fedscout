@@ -14,7 +14,7 @@ function CheckIcon() {
 
 function LeftPanel() {
   return (
-    <div className="hidden lg:flex lg:w-1/2 flex-col justify-between p-10" style={{ backgroundColor: 'var(--bg-secondary)' }}>
+    <div className="hidden lg:flex lg:w-1/2 flex-col justify-between bg-slate-900 p-10">
       <Link href="/" className="text-4xl font-extrabold tracking-tight">
         <span className="text-white">Fed</span><span className="text-red-500">Scout</span>
       </Link>
@@ -55,7 +55,7 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="min-h-screen flex" style={{ backgroundColor: 'var(--bg-primary)' }}>
+    <div className="min-h-screen flex bg-slate-950">
       <LeftPanel />
 
       <div className="flex flex-1 flex-col justify-center px-6 py-12 lg:px-16">

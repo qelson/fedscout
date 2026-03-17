@@ -15,8 +15,8 @@ export default async function SettingsPage() {
   ])
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: 'var(--bg-primary)' }}>
-      <header className="sticky top-0 z-10 border-b" style={{ backgroundColor: 'var(--bg-secondary)', borderColor: 'var(--border)' }}>
+    <div className="min-h-screen bg-slate-950">
+      <header className="sticky top-0 z-10 bg-slate-900 border-b border-slate-800">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Link href="/dashboard" className="text-slate-400 hover:text-slate-200 transition-colors">

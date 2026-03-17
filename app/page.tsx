@@ -4,10 +4,10 @@ import Link from 'next/link'
 
 export default function Home() {
   return (
-    <div className="min-h-screen text-slate-100" style={{ backgroundColor: 'var(--bg-primary)' }}>
+    <div className="min-h-screen text-slate-100" style={{ backgroundColor: '#0a0f1e' }}>
 
       {/* ── Navbar ── */}
-      <header className="sticky top-0 z-50 border-b" style={{ backgroundColor: 'var(--bg-primary)', borderColor: 'var(--border)' }}>
+      <header className="sticky top-0 z-50 border-b" style={{ backgroundColor: '#0a0f1e', borderColor: '#1e293b' }}>
         <div className="max-w-7xl mx-auto px-6 sm:px-8 h-14 flex items-center justify-between">
           <Link href="/" className="text-4xl font-extrabold tracking-tight">
             <span className="text-white">Fed</span><span className="text-red-500">Scout</span>
