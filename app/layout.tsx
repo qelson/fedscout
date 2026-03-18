@@ -14,8 +14,11 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "FedScout",
-  description: "Never miss a government contract",
+  title: "FedScout — Federal Contract Intelligence",
+  description: "Never miss a government contract. FedScout finds the federal opportunities that match your business profile and delivers them to your inbox every morning.",
+  icons: {
+    icon: '/favicon.svg',
+  },
 };
 
 export default function RootLayout({

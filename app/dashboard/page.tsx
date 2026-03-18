@@ -1,7 +1,12 @@
+import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { OpportunityWithStatus, UserPreferences } from '@/lib/types'
 import DashboardClient from './DashboardClient'
+
+export const metadata: Metadata = {
+  title: 'Dashboard — FedScout',
+}
 
 async function fetchOpportunities(
   supabase: ReturnType<typeof createClient>,
