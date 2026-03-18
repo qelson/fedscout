@@ -1,12 +1,15 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, Suspense } from 'react'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import { login } from '@/app/actions/auth'
 
-export default function LoginPage() {
+function LoginForm() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const searchParams = useSearchParams()
+  const inactivity = searchParams.get('reason') === 'inactivity'
 
   async function handleSubmit(formData: FormData) {
     setError(null)
@@ -28,6 +31,13 @@ export default function LoginPage() {
             <span className="text-white">Fed</span><span className="text-red-500">Scout</span>
           </Link>
         </div>
+
+        {/* Inactivity notice */}
+        {inactivity && (
+          <p className="text-amber-400 text-sm text-center mb-4">
+            You were signed out due to inactivity.
+          </p>
+        )}
 
         {/* Heading */}
         <h1 className="text-slate-100 text-2xl font-bold text-center mb-2">Welcome back</h1>
@@ -91,5 +101,13 @@ export default function LoginPage() {
 
       </div>
     </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginForm />
+    </Suspense>
   )
 }

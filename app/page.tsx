@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import NavAuth from './components/NavAuth'
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
@@ -16,7 +17,7 @@ export default function Home() {
           <nav className="flex items-center gap-5">
             <a href="#how-it-works" className="hidden md:block text-sm text-slate-400 hover:text-slate-200 transition-colors">How it works</a>
             <a href="/#pricing" className="hidden md:block text-sm text-slate-400 hover:text-slate-200 transition-colors">Pricing</a>
-            <Link href="/login" className="hidden md:block text-sm text-slate-400 hover:text-slate-200 transition-colors">Sign in</Link>
+            <div className="hidden md:block"><NavAuth /></div>
             <Link
               href="/quiz"
               className="rounded-md px-4 py-2 text-sm font-semibold text-white transition-colors bg-red-700 hover:bg-red-800"
