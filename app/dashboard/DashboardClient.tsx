@@ -60,6 +60,10 @@ function OpportunityCard({
   showTopMatch,
   showScore,
   userPrefs,
+  brief,
+  briefLoading,
+  isExpanded,
+  onGetBrief,
 }: {
   opp: OpportunityWithStatus
   status: OppStatus | null
@@ -68,6 +72,10 @@ function OpportunityCard({
   showTopMatch: boolean
   showScore: boolean
   userPrefs: UserPreferences | null
+  brief: string | undefined
+  briefLoading: boolean
+  isExpanded: boolean
+  onGetBrief: () => void
 }) {
   const [showTooltip, setShowTooltip] = useState(false)
   const dl = deadlineInfo(opp.response_deadline)
@@ -155,7 +163,7 @@ function OpportunityCard({
         )}
       </div>
 
-      {/* Bottom row: status buttons + deadline */}
+      {/* Bottom row: status buttons + deadline + brief */}
       <div className="flex items-center justify-between gap-2">
         <div className="flex gap-1.5">
           {STATUS_BUTTONS.map(({ key, label }) => {
@@ -193,8 +201,50 @@ function OpportunityCard({
           {value && (
             <span className="text-xs font-extrabold" style={{ color: '#f1f5f9' }}>{value}</span>
           )}
+          <button
+            type="button"
+            onClick={onGetBrief}
+            className="ml-auto flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg border border-slate-700 text-slate-400 hover:border-blue-600 hover:text-blue-400 transition-colors"
+          >
+            {briefLoading ? (
+              <span className="animate-pulse">Analyzing...</span>
+            ) : isExpanded ? (
+              '▲ Hide brief'
+            ) : (
+              '✦ Get brief'
+            )}
+          </button>
         </div>
       </div>
+
+      {/* Brief expansion panel */}
+      {isExpanded && (
+        <div className="mt-3 pt-3 border-t border-slate-800">
+          {briefLoading ? (
+            <div className="space-y-2">
+              {[1,2,3,4].map(i => (
+                <div key={i} className="h-3 bg-slate-800 rounded animate-pulse" style={{ width: `${85 - i * 8}%` }} />
+              ))}
+            </div>
+          ) : brief ? (
+            <div className="space-y-2">
+              {brief.split('\n').filter(line => line.trim()).map((line, i) => (
+                <div key={i} className="flex items-start gap-2">
+                  <span className="text-blue-500 mt-0.5 flex-shrink-0">·</span>
+                  <p className="text-slate-300 text-xs leading-relaxed">
+                    {line.replace(/^[\d.\-*•]\s*/, '').trim()}
+                  </p>
+                </div>
+              ))}
+              <p className="text-slate-600 text-xs mt-2 pt-2 border-t border-slate-800">
+                AI-generated summary · Always verify details on SAM.gov
+              </p>
+            </div>
+          ) : (
+            <p className="text-slate-500 text-xs">Failed to generate brief. Try again.</p>
+          )}
+        </div>
+      )}
     </div>
   )
 }
@@ -227,6 +277,41 @@ export default function DashboardClient({
   )
 
   const [activeTab, setActiveTab] = useState<FilterTab>('all')
+
+  const [briefs, setBriefs] = useState<Record<string, string>>({})
+  const [briefLoading, setBriefLoading] = useState<Record<string, boolean>>({})
+  const [expandedBrief, setExpandedBrief] = useState<string | null>(null)
+
+  async function fetchBrief(opp: OpportunityWithStatus) {
+    if (briefs[opp.id]) {
+      setExpandedBrief(expandedBrief === opp.id ? null : opp.id)
+      return
+    }
+    setBriefLoading(prev => ({ ...prev, [opp.id]: true }))
+    setExpandedBrief(opp.id)
+    try {
+      const res = await fetch('/api/contract-brief', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          opportunityId: opp.id,
+          title: opp.title,
+          description: opp.description,
+          agency: opp.agency,
+          naicsCode: opp.naics_code,
+          estimatedValue: opp.estimated_value_min ?? opp.estimated_value_max,
+        }),
+      })
+      const data = await res.json()
+      if (data.brief) {
+        setBriefs(prev => ({ ...prev, [opp.id]: data.brief }))
+      }
+    } catch (err) {
+      console.error('Brief fetch error:', err)
+    } finally {
+      setBriefLoading(prev => ({ ...prev, [opp.id]: false }))
+    }
+  }
 
   function handleStatusChange(oppId: string, newStatus: OppStatus) {
     const current = statuses[oppId]
@@ -542,6 +627,10 @@ export default function DashboardClient({
                     showTopMatch={opp.id === topId}
                     showScore={!!userPrefs}
                     userPrefs={userPrefs}
+                    brief={briefs[opp.id]}
+                    briefLoading={!!briefLoading[opp.id]}
+                    isExpanded={expandedBrief === opp.id}
+                    onGetBrief={() => fetchBrief(opp)}
                   />
                 ))}
               </div>
