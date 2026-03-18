@@ -21,6 +21,9 @@ export interface DigestOpportunity {
   estimated_value_max: number | null
   response_deadline: string | null
   description: string
+  score?: number
+  scoreLabel?: string
+  brief?: string
 }
 
 interface DailyDigestProps {
@@ -173,6 +176,17 @@ export default function DailyDigest({
                   {opp.title}
                 </Link>
 
+                {/* Score */}
+                {opp.score !== undefined && opp.scoreLabel && (
+                  <Text style={{
+                    fontSize: '12px',
+                    color: opp.score >= 80 ? '#16a34a' : opp.score >= 60 ? '#d97706' : '#9ca3af',
+                    margin: '4px 0 0',
+                  }}>
+                    {opp.score}/100 · {opp.scoreLabel}
+                  </Text>
+                )}
+
                 {/* Meta */}
                 <Text style={metaStyle}>
                   {opp.agency}&nbsp;&nbsp;·&nbsp;&nbsp;
@@ -180,14 +194,43 @@ export default function DailyDigest({
                   Due {formatDeadline(opp.response_deadline)}
                 </Text>
 
-                {/* Excerpt */}
-                {opp.description && (
+                {/* Brief first bullet */}
+                {opp.brief && (() => {
+                  const firstLine = opp.brief.split('\n').find(l => l.trim())
+                  return firstLine ? (
+                    <Text style={{ ...excerptStyle, fontStyle: 'italic' }}>
+                      · {firstLine.replace(/^[\d.\-*•]\s*/, '').trim()}
+                    </Text>
+                  ) : null
+                })()}
+
+                {/* Excerpt (only if no brief) */}
+                {!opp.brief && opp.description && (
                   <Text style={excerptStyle}>{excerpt(opp.description)}</Text>
                 )}
 
                 {i < opportunities.length - 1 && <Hr style={hrStyle} />}
               </Section>
             ))}
+          </Section>
+
+          {/* Dashboard CTA */}
+          <Section style={{ textAlign: 'center', padding: '0 36px 24px' }}>
+            <Link
+              href={settingsUrl.replace('/settings', '/dashboard')}
+              style={{
+                backgroundColor: '#111827',
+                color: '#ffffff',
+                padding: '12px 28px',
+                borderRadius: '6px',
+                fontSize: '14px',
+                fontWeight: '600',
+                textDecoration: 'none',
+                display: 'inline-block',
+              }}
+            >
+              View all your matches →
+            </Link>
           </Section>
 
           {/* Footer */}

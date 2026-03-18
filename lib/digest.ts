@@ -6,6 +6,7 @@ import { Resend } from 'resend'
 import { render } from '@react-email/render'
 import DailyDigest from '@/emails/DailyDigest'
 import { UserPreferences } from '@/lib/types'
+import { scoreOpportunity, getScoreLabel } from '@/lib/scoring'
 import { SupabaseClient } from '@supabase/supabase-js'
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://fedscout.com'
@@ -41,7 +42,7 @@ export async function buildAndSendDigest(
 
   let query = supabase
     .from('opportunities')
-    .select('title, sam_url, agency, estimated_value_min, estimated_value_max, response_deadline, description')
+    .select('id, title, sam_url, agency, naics_code, estimated_value_min, estimated_value_max, response_deadline, description, posted_date, created_at')
     .gte('created_at', since)
     .order('response_deadline', { ascending: true, nullsFirst: false })
     .limit(10)
@@ -52,6 +53,28 @@ export async function buildAndSendDigest(
   if (error) return { sent: false, opportunityCount: 0, error: error.message }
   if (!opps || opps.length === 0) return { sent: false, opportunityCount: 0 }
 
+  // ── Score and sort opportunities ─────────────────────────────────────────
+  const scoredOpps = opps.map(o => {
+    const score = scoreOpportunity(o as any, prefs)
+    return { ...o, score, scoreLabel: getScoreLabel(score) }
+  }).sort((a, b) => b.score - a.score)
+
+  // ── Fetch cached briefs ───────────────────────────────────────────────────
+  const oppIds = scoredOpps.map(o => o.id).filter(Boolean)
+  let briefMap: Record<string, string> = {}
+  if (oppIds.length > 0) {
+    const { data: briefs } = await supabase
+      .from('contract_briefs')
+      .select('opportunity_id, brief')
+      .eq('user_id', userId)
+      .in('opportunity_id', oppIds)
+    if (briefs) {
+      briefMap = Object.fromEntries(briefs.map(b => [b.opportunity_id, b.brief]))
+    }
+  }
+
+  const oppsWithBriefs = scoredOpps.map(o => ({ ...o, brief: briefMap[o.id] ?? undefined }))
+
   // ── Render and send ───────────────────────────────────────────────────────
   const date = new Date().toLocaleDateString('en-US', {
     weekday: 'long', month: 'long', day: 'numeric', year: 'numeric',
@@ -59,7 +82,7 @@ export async function buildAndSendDigest(
 
   const html = await render(
     DailyDigest({
-      opportunities: opps,
+      opportunities: oppsWithBriefs,
       date,
       settingsUrl: `${APP_URL}/settings`,
       userEmail,
@@ -70,18 +93,18 @@ export async function buildAndSendDigest(
   const { error: sendError } = await resend.emails.send({
     from: fromEmail,
     to: userEmail,
-    subject: `Your fedscout digest — ${opps.length} new ${opps.length === 1 ? 'opportunity' : 'opportunities'}`,
+    subject: `${oppsWithBriefs.length} federal contract ${oppsWithBriefs.length === 1 ? 'match' : 'matches'} for you today — FedScout`,
     html,
   })
 
-  if (sendError) return { sent: false, opportunityCount: opps.length, error: sendError.message }
+  if (sendError) return { sent: false, opportunityCount: oppsWithBriefs.length, error: sendError.message }
 
   // ── Log the send ─────────────────────────────────────────────────────────
   await supabase.from('digest_logs').insert({
     user_id: userId,
     sent_at: new Date().toISOString(),
-    opportunity_count: opps.length,
+    opportunity_count: oppsWithBriefs.length,
   })
 
-  return { sent: true, opportunityCount: opps.length }
+  return { sent: true, opportunityCount: oppsWithBriefs.length }
 }

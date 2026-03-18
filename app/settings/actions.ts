@@ -19,7 +19,7 @@ export async function sendTestDigest() {
 
   try {
     // Use 30-day lookback so the test works even without data from the last 24 hours
-    const result = await buildAndSendDigest(supabase, user.id, user.email!, prefs, 24 * 30)
+    const result = await buildAndSendDigest(supabase, user.id, user.email!, prefs, 24 * 60)
 
     if (result.error) return { error: result.error }
     if (!result.sent) return { error: 'No matching opportunities found to include in the digest.' }
