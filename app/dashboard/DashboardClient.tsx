@@ -280,6 +280,7 @@ export default function DashboardClient({
   )
 
   const [activeTab, setActiveTab] = useState<FilterTab>('all')
+  const [searchQuery, setSearchQuery] = useState('')
 
   const [briefs, setBriefs] = useState<Record<string, string>>({})
   const [briefLoading, setBriefLoading] = useState<Record<string, boolean>>({})
@@ -382,12 +383,9 @@ export default function DashboardClient({
 
   // Filtered + sorted list
   const visible = sortedOpportunities.filter((o) => {
-    const s = statuses[o.id]
-    if (activeTab === 'all')        return true
-    if (activeTab === 'pursuing')   return s === 'pursuing'
-    if (activeTab === 'interested') return s === 'interested'
-    if (activeTab === 'passed')     return s === 'pass'
-    return true
+    const matchesTab = activeTab === 'all' ? true : activeTab === 'pursuing' ? statuses[o.id] === 'pursuing' : activeTab === 'interested' ? statuses[o.id] === 'interested' : statuses[o.id] === 'pass'
+    const matchesSearch = !searchQuery || o.title.toLowerCase().includes(searchQuery.toLowerCase()) || o.agency.toLowerCase().includes(searchQuery.toLowerCase())
+    return matchesTab && matchesSearch
   })
 
   // Greeting
@@ -564,6 +562,17 @@ export default function DashboardClient({
                   </span>
                 )}
               </div>
+            </div>
+
+            {/* Search */}
+            <div className="px-5 pt-3">
+              <input
+                type="text"
+                placeholder="Search contracts..."
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-100 placeholder-slate-600 focus:border-red-600 focus:outline-none mb-3"
+              />
             </div>
 
             {/* Filter tabs */}
