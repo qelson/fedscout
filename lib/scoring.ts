@@ -82,3 +82,56 @@ export function getScoreLabel(score: number): string {
   if (score >= 40) return 'Partial match'
   return 'Low match'
 }
+
+export function getScoreBreakdown(
+  opportunity: Opportunity,
+  prefs: UserPreferences
+): string[] {
+  const reasons: string[] = []
+  const title = opportunity.title.toLowerCase()
+  const description = (opportunity.description || '').toLowerCase()
+
+  if (prefs.naics_codes?.includes(opportunity.naics_code)) {
+    reasons.push(`NAICS ${opportunity.naics_code} matches your profile (+40)`)
+  }
+
+  const matchedTitleKeywords: string[] = []
+  const matchedDescKeywords: string[] = []
+
+  for (const kw of prefs.keywords || []) {
+    const keyword = kw.toLowerCase().trim()
+    if (!keyword) continue
+    if (title.includes(keyword)) matchedTitleKeywords.push(kw)
+    else if (description.includes(keyword)) matchedDescKeywords.push(kw)
+  }
+
+  if (matchedTitleKeywords.length > 0) {
+    reasons.push(`Title matches: ${matchedTitleKeywords.join(', ')}`)
+  }
+  if (matchedDescKeywords.length > 0) {
+    reasons.push(`Description matches: ${matchedDescKeywords.join(', ')}`)
+  }
+
+  const agency = opportunity.agency.toUpperCase()
+  for (const a of prefs.agencies || []) {
+    if (agency.includes(a.toUpperCase())) {
+      reasons.push(`Agency match: ${a}`)
+      break
+    }
+  }
+
+  const oppValue = opportunity.estimated_value_min ?? opportunity.estimated_value_max
+  if (oppValue !== null && oppValue !== undefined) {
+    const withinMin = prefs.min_value === null || oppValue >= (prefs.min_value ?? 0)
+    const withinMax = prefs.max_value === null || oppValue <= (prefs.max_value ?? Infinity)
+    if (withinMin && withinMax) {
+      reasons.push('Contract value within your target range')
+    }
+  }
+
+  if (reasons.length === 0) {
+    reasons.push('No direct matches found — broadening your keywords may help')
+  }
+
+  return reasons
+}

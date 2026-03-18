@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { OpportunityWithStatus, OppStatus, UserPreferences } from '@/lib/types'
 import { updateOpportunityStatus } from './actions'
 import { logout } from '@/app/actions/auth'
-import { scoreOpportunity, getScoreColor, getScoreBg, getScoreLabel } from '@/lib/scoring'
+import { scoreOpportunity, getScoreColor, getScoreBg, getScoreLabel, getScoreBreakdown } from '@/lib/scoring'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -59,6 +59,7 @@ function OpportunityCard({
   score,
   showTopMatch,
   showScore,
+  userPrefs,
 }: {
   opp: OpportunityWithStatus
   status: OppStatus | null
@@ -66,7 +67,9 @@ function OpportunityCard({
   score: number
   showTopMatch: boolean
   showScore: boolean
+  userPrefs: UserPreferences | null
 }) {
+  const [showTooltip, setShowTooltip] = useState(false)
   const dl = deadlineInfo(opp.response_deadline)
   const value = formatValue(opp.estimated_value_min, opp.estimated_value_max)
   const agencyShort = opp.agency ? getAgencyShortName(opp.agency) : null
@@ -98,8 +101,32 @@ function OpportunityCard({
             </span>
           )}
           {showScore && (
-            <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full border text-xs font-bold ${getScoreBg(score)}`}>
-              <span className={getScoreColor(score)}>{score}</span>
+            <div className="relative">
+              <div
+                className={`flex items-center gap-1 px-2 py-0.5 rounded-full border text-xs font-bold cursor-help ${getScoreBg(score)}`}
+                onMouseEnter={() => setShowTooltip(true)}
+                onMouseLeave={() => setShowTooltip(false)}
+              >
+                <span className={getScoreColor(score)}>{score}</span>
+                <span className={`text-xs ${getScoreColor(score)}`}>pts</span>
+              </div>
+
+              {showTooltip && userPrefs && (
+                <div className="absolute right-0 top-7 z-50 w-64 bg-slate-800 border border-slate-700 rounded-xl p-3 shadow-xl">
+                  <p className="text-slate-300 text-xs font-bold mb-2">Why this score?</p>
+                  <ul className="space-y-1">
+                    {getScoreBreakdown(opp, userPrefs).map((reason, i) => (
+                      <li key={i} className="text-slate-400 text-xs flex items-start gap-1.5">
+                        <span className="text-green-400 mt-0.5">·</span>
+                        {reason}
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="text-slate-600 text-xs mt-2 border-t border-slate-700 pt-2">
+                    Score: {score}/100
+                  </p>
+                </div>
+              )}
             </div>
           )}
           <span
@@ -431,7 +458,7 @@ export default function DashboardClient({
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-4">
 
           {/* ── Left: opportunity feed ── */}
-          <div className="rounded-xl border overflow-hidden" style={{ backgroundColor: '#0f172a', borderColor: '#1e293b' }}>
+          <div className="rounded-xl border" style={{ backgroundColor: '#0f172a', borderColor: '#1e293b' }}>
 
             {/* Feed header */}
             <div
@@ -514,6 +541,7 @@ export default function DashboardClient({
                     score={opp.score}
                     showTopMatch={opp.id === topId}
                     showScore={!!userPrefs}
+                    userPrefs={userPrefs}
                   />
                 ))}
               </div>
