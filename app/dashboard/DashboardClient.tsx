@@ -367,6 +367,7 @@ export default function DashboardClient({
 
   const [activeTab, setActiveTab] = useState<FilterTab>('all')
   const [searchQuery, setSearchQuery] = useState('')
+  const [hideLowScores, setHideLowScores] = useState(false)
 
   const [briefs, setBriefs] = useState<Record<string, string>>({})
   const [briefLoading, setBriefLoading] = useState<Record<string, boolean>>({})
@@ -496,7 +497,7 @@ export default function DashboardClient({
   const visible = sortedOpportunities.filter((o) => {
     const matchesTab = activeTab === 'all' ? true : activeTab === 'pursuing' ? statuses[o.id] === 'pursuing' : activeTab === 'interested' ? statuses[o.id] === 'interested' : statuses[o.id] === 'pass'
     const matchesSearch = !searchQuery || o.title.toLowerCase().includes(searchQuery.toLowerCase()) || o.agency.toLowerCase().includes(searchQuery.toLowerCase())
-    return matchesTab && matchesSearch
+    return matchesTab && matchesSearch && (!hideLowScores || o.score >= 40)
   })
 
   // Greeting
@@ -676,15 +677,24 @@ export default function DashboardClient({
               </div>
             </div>
 
-            {/* Search */}
+            {/* Search + filter */}
             <div className="px-5 pt-3">
               <input
                 type="text"
                 placeholder="Search contracts..."
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
-                className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-100 placeholder-slate-600 focus:border-red-600 focus:outline-none mb-3"
+                className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-100 placeholder-slate-600 focus:border-red-600 focus:outline-none mb-2"
               />
+              <label className="flex items-center gap-2 cursor-pointer mb-3">
+                <input
+                  type="checkbox"
+                  checked={hideLowScores}
+                  onChange={e => setHideLowScores(e.target.checked)}
+                  className="h-3 w-3 accent-red-600"
+                />
+                <span className="text-slate-500 text-xs">Hide low matches (under 40)</span>
+              </label>
             </div>
 
             {/* Filter tabs */}

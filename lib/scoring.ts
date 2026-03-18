@@ -59,6 +59,30 @@ export function scoreOpportunity(
     }
   }
 
+  // Deadline bonus — +5 if more than 14 days away (enough time to respond)
+  if (opportunity.response_deadline) {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const d = new Date(opportunity.response_deadline)
+    const daysLeft = Math.ceil((d.getTime() - today.getTime()) / 86_400_000)
+    if (daysLeft > 14) score += 5
+  }
+
+  // No description penalty — -10 (less information = higher risk)
+  if (!opportunity.description || opportunity.description.trim().length < 50) {
+    score -= 10
+  }
+
+  // Small business set-aside bonus — +15
+  if (description.includes('small business')) {
+    score += 15
+  }
+
+  // Small contract bonus — +5 if under $2M (more appropriate for small contractors)
+  if (oppValue !== null && oppValue !== undefined && oppValue < 2_000_000) {
+    score += 5
+  }
+
   // Clamp between 0 and 100
   return Math.min(100, Math.max(0, score))
 }
@@ -115,7 +139,7 @@ export function getScoreBreakdown(
   const agency = opportunity.agency.toUpperCase()
   for (const a of prefs.agencies || []) {
     if (agency.includes(a.toUpperCase())) {
-      reasons.push(`Agency match: ${a}`)
+      reasons.push(`Agency match: ${a} (+10)`)
       break
     }
   }
@@ -125,8 +149,28 @@ export function getScoreBreakdown(
     const withinMin = prefs.min_value === null || oppValue >= (prefs.min_value ?? 0)
     const withinMax = prefs.max_value === null || oppValue <= (prefs.max_value ?? Infinity)
     if (withinMin && withinMax) {
-      reasons.push('Contract value within your target range')
+      reasons.push('Contract value within your target range (+10)')
     }
+  }
+
+  if (opportunity.response_deadline) {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const d = new Date(opportunity.response_deadline)
+    const daysLeft = Math.ceil((d.getTime() - today.getTime()) / 86_400_000)
+    if (daysLeft > 14) reasons.push(`${daysLeft} days to respond — enough time (+5)`)
+  }
+
+  if (!opportunity.description || opportunity.description.trim().length < 50) {
+    reasons.push('No description available — harder to evaluate (−10)')
+  }
+
+  if (description.includes('small business')) {
+    reasons.push('Small business set-aside — more winnable (+15)')
+  }
+
+  if (oppValue !== null && oppValue !== undefined && oppValue < 2_000_000) {
+    reasons.push('Under $2M — appropriate size for small contractors (+5)')
   }
 
   if (reasons.length === 0) {
