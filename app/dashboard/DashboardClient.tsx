@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useEffect, useTransition } from 'react'
 import Link from 'next/link'
 import { OpportunityWithStatus, OppStatus, UserPreferences } from '@/lib/types'
 import { updateOpportunityStatus } from './actions'
@@ -78,6 +78,8 @@ function OpportunityCard({
   onGetBrief: () => void
 }) {
   const [showTooltip, setShowTooltip] = useState(false)
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
   const dl = deadlineInfo(opp.response_deadline)
   const value = formatValue(opp.estimated_value_min, opp.estimated_value_max)
   const agencyShort = opp.agency ? getAgencyShortName(opp.agency) : null
@@ -86,6 +88,7 @@ function OpportunityCard({
     <div
       className="px-5 py-4 border-b transition-colors"
       style={{ borderColor: 'rgba(30,41,59,0.5)' }}
+      suppressHydrationWarning
       onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'rgba(30,41,59,0.5)')}
       onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
     >
@@ -218,7 +221,7 @@ function OpportunityCard({
       </div>
 
       {/* Brief expansion panel */}
-      {isExpanded && (
+      {mounted && isExpanded && (
         <div className="mt-3 pt-3 border-t border-slate-800">
           {briefLoading ? (
             <div className="space-y-2">

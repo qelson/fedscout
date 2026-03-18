@@ -56,6 +56,8 @@ Provide exactly 4 bullet points, each one sentence, no headers, no preamble:
 
 Be direct, specific, and practical. No generic advice.`
 
+  console.log('API key exists:', !!process.env.ANTHROPIC_API_KEY)
+
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -84,13 +86,17 @@ Be direct, specific, and practical. No generic advice.`
       return NextResponse.json({ error: 'Empty response from AI' }, { status: 500 })
     }
 
-    // Cache the brief in Supabase
-    await supabase.from('contract_briefs').upsert({
-      user_id: user.id,
-      opportunity_id: opportunityId,
-      brief,
-      created_at: new Date().toISOString(),
-    }, { onConflict: 'user_id,opportunity_id' })
+    // Cache the brief in Supabase (non-blocking — don't fail if table missing)
+    try {
+      await supabase.from('contract_briefs').upsert({
+        user_id: user.id,
+        opportunity_id: opportunityId,
+        brief,
+        created_at: new Date().toISOString(),
+      }, { onConflict: 'user_id,opportunity_id' })
+    } catch (cacheErr) {
+      console.error('Cache write failed (non-blocking):', cacheErr)
+    }
 
     return NextResponse.json({ brief, cached: false })
   } catch (err) {
