@@ -485,20 +485,20 @@ export default function DashboardClient({
     .sort((a, b) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime())
     .slice(0, 4)
 
-  // Top agencies
-  const agencyCounts = opportunities.reduce((acc, o) => {
-    if (o.agency) acc[o.agency] = (acc[o.agency] ?? 0) + 1
-    return acc
-  }, {} as Record<string, number>)
-  const topAgencies = Object.entries(agencyCounts).sort((a, b) => b[1] - a[1]).slice(0, 4)
-  const maxCount = topAgencies[0]?.[1] ?? 1
-
   // Filtered + sorted list
   const visible = sortedOpportunities.filter((o) => {
     const matchesTab = activeTab === 'all' ? true : activeTab === 'pursuing' ? statuses[o.id] === 'pursuing' : activeTab === 'interested' ? statuses[o.id] === 'interested' : statuses[o.id] === 'pass'
     const matchesSearch = !searchQuery || o.title.toLowerCase().includes(searchQuery.toLowerCase()) || o.agency.toLowerCase().includes(searchQuery.toLowerCase())
     return matchesTab && matchesSearch && (!hideLowScores || o.score >= 40)
   })
+
+  // Top agencies from visible list
+  const visibleAgencyCounts = visible.reduce((acc, o) => {
+    if (o.agency) acc[o.agency] = (acc[o.agency] ?? 0) + 1
+    return acc
+  }, {} as Record<string, number>)
+  const topAgencies = Object.entries(visibleAgencyCounts).sort((a, b) => b[1] - a[1]).slice(0, 4)
+  const maxCount = topAgencies[0]?.[1] ?? 1
 
   // Greeting
   const hour = new Date().getHours()
@@ -605,7 +605,7 @@ export default function DashboardClient({
             {greeting}, {firstName}
           </h1>
           <p className="text-sm mt-1 text-slate-400">
-            {dateLabel} · {opportunities.length} contracts match your profile
+            {dateLabel} · {newThisWeek} new this week · {opportunities.length} total in database
           </p>
         </div>
 
@@ -616,7 +616,7 @@ export default function DashboardClient({
               label: 'NEW THIS WEEK',
               value: newThisWeek,
               valueColor: '#f1f5f9',
-              sub: '↑ updated daily',
+              sub: `${newThisWeek} new · ${opportunities.length} total`,
               subColor: '#16a34a',
             },
             {
@@ -740,14 +740,35 @@ export default function DashboardClient({
               </div>
             ) : visible.length === 0 ? (
               <div className="py-20 text-center px-4">
-                <svg className="h-8 w-8 mx-auto mb-3" style={{ color: '#334155' }} fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 15.803 7.5 7.5 0 0015.803 15.803z" />
+                <svg className="h-10 w-10 mx-auto mb-4" style={{ color: '#334155' }} fill="none" stroke="currentColor" strokeWidth={1} viewBox="0 0 48 48">
+                  <rect x="8" y="4" width="24" height="32" rx="2" strokeWidth="2" />
+                  <path d="M14 14h12M14 20h8" strokeWidth="2" strokeLinecap="round" />
+                  <circle cx="36" cy="36" r="8" strokeWidth="2" />
+                  <path d="M42 42l-4-4" strokeWidth="2" strokeLinecap="round" />
                 </svg>
-                <p className="text-sm font-semibold mb-1" style={{ color: '#64748b' }}>No opportunities in this view</p>
-                <p className="text-xs" style={{ color: '#475569' }}>
-                  Switch tabs or{' '}
-                  <Link href="/settings" style={{ color: '#60a5fa' }}>update your filters</Link>.
+                <p className="text-sm font-bold mb-1" style={{ color: '#64748b' }}>No contracts found</p>
+                <p className="text-xs mb-4" style={{ color: '#475569' }}>
+                  Try broadening your search or updating your keywords in Settings.
                 </p>
+                <div className="flex items-center justify-center gap-3">
+                  <Link
+                    href="/settings"
+                    className="text-xs px-4 py-2 rounded-lg border transition-colors"
+                    style={{ borderColor: '#334155', color: '#64748b' }}
+                  >
+                    Update keywords
+                  </Link>
+                  {searchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => setSearchQuery('')}
+                      className="text-xs px-4 py-2 rounded-lg border transition-colors"
+                      style={{ borderColor: '#334155', color: '#64748b' }}
+                    >
+                      Clear search
+                    </button>
+                  )}
+                </div>
               </div>
             ) : (
               <div>
@@ -800,12 +821,20 @@ export default function DashboardClient({
               <p className="text-xs font-semibold mb-2" style={{ color: '#93c5fd' }}>
                 Tomorrow · 8:00 AM
               </p>
-              <span
-                className="inline-block rounded-full px-2 py-0.5 text-xs"
-                style={{ backgroundColor: '#1e3a8a', color: '#93c5fd' }}
-              >
-                {opportunities.length} matches queued
-              </span>
+              {opportunities.length === 0 ? (
+                <p className="text-xs" style={{ color: '#3b82f6' }}>
+                  No matches queued for tomorrow.{' '}
+                  <Link href="/settings" style={{ color: '#93c5fd' }}>Update your keywords</Link>
+                  {' '}to get better matches.
+                </p>
+              ) : (
+                <span
+                  className="inline-block rounded-full px-2 py-0.5 text-xs animate-pulse"
+                  style={{ backgroundColor: '#1e3a8a', color: '#93c5fd' }}
+                >
+                  {opportunities.length} matches queued
+                </span>
+              )}
             </div>
 
             {/* Top agencies */}
