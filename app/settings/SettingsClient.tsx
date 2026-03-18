@@ -34,24 +34,39 @@ function sizeIndexFromPrefs(min: number | null, max: number | null): number | nu
   return SIZE_OPTIONS.findIndex((o) => o.min === min && o.max === max)
 }
 
+function Card({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 mb-6">
+      {children}
+    </div>
+  )
+}
+
 function SectionHeader({ title, description }: { title: string; description: string }) {
   return (
-    <div className="pb-4 border-b border-gray-100">
-      <h2 className="text-sm font-semibold text-gray-900">{title}</h2>
-      <p className="mt-0.5 text-sm text-gray-500">{description}</p>
+    <div className="mb-5">
+      <h2 className="text-base font-bold text-slate-100 mb-1">{title}</h2>
+      <p className="text-sm text-slate-500">{description}</p>
+      <div className="border-t border-slate-800 mt-4" />
     </div>
   )
 }
 
 function StatusBadge({ status }: { status: string | null }) {
-  if (!status) return <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-500">No subscription</span>
-  const isActive = status === 'active' || status === 'trialing'
+  if (!status) return (
+    <span className="inline-flex items-center rounded-full border border-slate-700 bg-slate-800 px-3 py-1 text-xs text-slate-400">
+      No subscription
+    </span>
+  )
+  const isTrialing = status === 'trialing'
+  const isActive = status === 'active'
   const isCanceled = status === 'canceled'
   return (
-    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-      isActive ? 'bg-green-100 text-green-700' :
-      isCanceled ? 'bg-red-100 text-red-700' :
-      'bg-gray-100 text-gray-500'
+    <span className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-medium ${
+      isTrialing ? 'bg-amber-950 text-amber-400 border-amber-800' :
+      isActive   ? 'bg-green-950 text-green-400 border-green-800' :
+      isCanceled ? 'bg-red-950 text-red-400 border-red-800' :
+                   'bg-slate-800 text-slate-400 border-slate-700'
     }`}>
       {status.charAt(0).toUpperCase() + status.slice(1)}
     </span>
@@ -181,126 +196,126 @@ export default function SettingsClient({
   }
 
   return (
-    <div className="space-y-10">
+    <div className="bg-slate-950 min-h-screen">
+      <div className="max-w-2xl mx-auto px-6 py-10">
 
-      {/* ── NAICS ── */}
-      <section className="space-y-5">
-        <SectionHeader
-          title="Work categories"
-          description="Select all NAICS codes that apply to your business."
-        />
+        {/* ── NAICS ── */}
+        <Card>
+          <SectionHeader
+            title="Work categories"
+            description="Select all NAICS codes that apply to your business."
+          />
 
-        <input
-          type="text"
-          placeholder="Search NAICS codes…"
-          value={naicsQuery}
-          onChange={(e) => setNaicsQuery(e.target.value)}
-          className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900"
-        />
-
-        <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
-          {filteredNaics.map((o) => {
-            const checked = naicsCodes.includes(o.code)
-            return (
-              <label
-                key={o.code}
-                className={`flex items-start gap-3 rounded-lg border p-3 cursor-pointer transition-colors ${
-                  checked ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
-                }`}
-              >
-                <input
-                  type="checkbox"
-                  checked={checked}
-                  onChange={() => toggleNaics(o.code)}
-                  className="mt-0.5 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                />
-                <span>
-                  <span className="block text-sm font-medium text-gray-900">{o.label}</span>
-                  <span className="block text-xs text-gray-400">{o.code}</span>
-                </span>
-              </label>
-            )
-          })}
-        </div>
-
-        <div className="flex gap-2">
           <input
             type="text"
-            placeholder="Custom NAICS code"
-            value={customCode}
-            onChange={(e) => { setCustomCode(e.target.value); setCustomError('') }}
-            onKeyDown={(e) => e.key === 'Enter' && addCustomNaics()}
-            maxLength={6}
-            className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900"
+            placeholder="Search NAICS codes…"
+            value={naicsQuery}
+            onChange={(e) => setNaicsQuery(e.target.value)}
+            className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-slate-100 text-sm placeholder-slate-600 focus:border-red-600 focus:outline-none mb-3"
           />
-          <button
-            type="button"
-            onClick={addCustomNaics}
-            className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-          >
-            Add
-          </button>
-        </div>
-        {customError && <p className="text-xs text-red-500">{customError}</p>}
 
-        {naicsCodes.length > 0 && (
-          <div className="flex flex-wrap gap-1.5">
-            {naicsCodes.map((code) => {
-              const label = NAICS_OPTIONS.find((o) => o.code === code)?.label
+          <div className="max-h-64 overflow-y-auto space-y-2 mb-4">
+            {filteredNaics.map((o) => {
+              const checked = naicsCodes.includes(o.code)
               return (
-                <span
-                  key={code}
-                  className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800"
+                <label
+                  key={o.code}
+                  className={`flex items-start gap-3 rounded-xl border px-4 py-3 cursor-pointer transition-colors ${
+                    checked
+                      ? 'border-red-600 bg-red-950'
+                      : 'border-slate-700 bg-slate-800 hover:border-slate-600'
+                  }`}
                 >
-                  {label ? `${code} · ${label.split(' ').slice(0, 3).join(' ')}` : code}
-                  <button
-                    type="button"
-                    onClick={() => setNaicsCodes((prev) => prev.filter((c) => c !== code))}
-                    className="hover:text-blue-600"
-                  >
-                    ×
-                  </button>
-                </span>
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={() => toggleNaics(o.code)}
+                    className="mt-0.5 h-4 w-4 accent-red-600"
+                  />
+                  <span>
+                    <span className="block text-sm font-medium text-slate-100">{o.label}</span>
+                    <span className="block text-xs font-mono text-slate-500">{o.code}</span>
+                  </span>
+                </label>
               )
             })}
           </div>
-        )}
-      </section>
 
-      {/* ── Keywords & Agencies ── */}
-      <section className="space-y-5">
-        <SectionHeader
-          title="Keywords & agencies"
-          description="Used to match contract titles and descriptions."
-        />
+          <div className="flex gap-2 mb-1">
+            <input
+              type="text"
+              placeholder="Custom NAICS code"
+              value={customCode}
+              onChange={(e) => { setCustomCode(e.target.value); setCustomError('') }}
+              onKeyDown={(e) => e.key === 'Enter' && addCustomNaics()}
+              maxLength={6}
+              className="flex-1 bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-slate-100 text-sm placeholder-slate-600 focus:border-red-600 focus:outline-none"
+            />
+            <button
+              type="button"
+              onClick={addCustomNaics}
+              className="bg-slate-700 hover:bg-slate-600 text-slate-200 text-sm px-4 py-2 rounded-lg transition-colors"
+            >
+              Add
+            </button>
+          </div>
+          {customError && <p className="text-xs text-red-400 mb-3">{customError}</p>}
 
-        <div className="space-y-1.5">
-          <label className="block text-sm font-medium text-gray-700">
-            Keywords <span className="font-normal text-gray-400">(comma-separated)</span>
-          </label>
+          {naicsCodes.length > 0 && (
+            <div className="flex flex-wrap mt-3">
+              {naicsCodes.map((code) => {
+                const label = NAICS_OPTIONS.find((o) => o.code === code)?.label
+                return (
+                  <span
+                    key={code}
+                    className="inline-flex items-center gap-1 bg-slate-800 border border-slate-700 text-slate-300 text-xs px-3 py-1 rounded-full mr-2 mb-2"
+                  >
+                    {label ? `${code} · ${label.split(' ').slice(0, 3).join(' ')}` : code}
+                    <button
+                      type="button"
+                      onClick={() => setNaicsCodes((prev) => prev.filter((c) => c !== code))}
+                      className="text-slate-500 hover:text-red-400 transition-colors"
+                    >
+                      ×
+                    </button>
+                  </span>
+                )
+              })}
+            </div>
+          )}
+        </Card>
+
+        {/* ── Keywords & Agencies ── */}
+        <Card>
+          <SectionHeader
+            title="Keywords & agencies"
+            description="Used to match contract titles and descriptions."
+          />
+
+          <p className="text-slate-400 text-xs font-semibold uppercase tracking-wide mb-2">
+            Keywords <span className="font-normal text-slate-600 normal-case tracking-normal">(comma-separated)</span>
+          </p>
           <textarea
             rows={3}
             placeholder="e.g. cybersecurity, IT support, network infrastructure"
             value={keywords}
             onChange={(e) => setKeywords(e.target.value)}
-            className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900 resize-none"
+            className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-slate-100 text-sm placeholder-slate-600 focus:border-red-600 focus:outline-none resize-none mb-4"
           />
-        </div>
 
-        <div className="space-y-2">
-          <label className="block text-sm font-medium text-gray-700">
-            Agencies <span className="font-normal text-gray-400">(optional)</span>
-          </label>
+          <p className="text-slate-400 text-xs font-semibold uppercase tracking-wide mb-2">
+            Agencies <span className="font-normal text-slate-600 normal-case tracking-normal">(optional)</span>
+          </p>
           <div className="grid grid-cols-4 gap-2">
             {AGENCIES.map((a) => {
               const checked = agencies.includes(a)
               return (
                 <label
                   key={a}
-                  className={`flex items-center justify-center rounded-lg border py-2.5 text-sm font-medium cursor-pointer transition-colors ${
+                  className={`flex items-center justify-center rounded-xl border py-3 text-sm font-semibold cursor-pointer transition-colors ${
                     checked
-                      ? 'border-gray-900 bg-gray-900 text-white'
-                      : 'border-gray-200 text-gray-600 hover:border-gray-300'
+                      ? 'bg-red-900 border-red-700 text-red-200'
+                      : 'bg-slate-800 border-slate-700 text-slate-400 hover:border-slate-600'
                   }`}
                 >
                   <input type="checkbox" checked={checked} onChange={() => toggleAgency(a)} className="sr-only" />
@@ -309,142 +324,142 @@ export default function SettingsClient({
               )
             })}
           </div>
-        </div>
-      </section>
+        </Card>
 
-      {/* ── Contract size ── */}
-      <section className="space-y-5">
-        <SectionHeader
-          title="Contract size"
-          description="Filter by estimated contract value."
-        />
-
-        <label className="flex items-center gap-2.5 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={anySize}
-            onChange={(e) => {
-              setAnySize(e.target.checked)
-              if (e.target.checked) setSizeIndex(null)
-            }}
-            className="h-4 w-4 rounded border-gray-300 text-gray-900 focus:ring-gray-900"
+        {/* ── Contract size ── */}
+        <Card>
+          <SectionHeader
+            title="Contract size"
+            description="Filter by estimated contract value."
           />
-          <span className="text-sm font-medium text-gray-700">Any size — show all contracts</span>
-        </label>
 
-        <div className={`space-y-2 transition-opacity ${anySize ? 'opacity-30 pointer-events-none' : ''}`}>
-          {SIZE_OPTIONS.map((opt, i) => {
-            const active = sizeIndex === i
-            return (
+          <label className="flex items-center gap-3 cursor-pointer mb-4">
+            <input
+              type="checkbox"
+              checked={anySize}
+              onChange={(e) => {
+                setAnySize(e.target.checked)
+                if (e.target.checked) setSizeIndex(null)
+              }}
+              className="h-4 w-4 accent-red-600"
+            />
+            <span className="text-sm font-medium text-slate-300">Any size — show all contracts</span>
+          </label>
+
+          <div className={`space-y-2 transition-opacity ${anySize ? 'opacity-40 pointer-events-none' : ''}`}>
+            {SIZE_OPTIONS.map((opt, i) => {
+              const active = sizeIndex === i
+              return (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => setSizeIndex(active ? null : i)}
+                  className={`w-full flex items-center justify-between rounded-xl border px-4 py-3 text-sm text-left transition-colors ${
+                    active
+                      ? 'border-red-600 bg-red-950 text-white'
+                      : 'bg-slate-800 border-slate-700 text-slate-300 hover:border-slate-600'
+                  }`}
+                >
+                  <span>{opt.label}</span>
+                  {active && (
+                    <svg className="h-4 w-4 text-red-400" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                  )}
+                </button>
+              )
+            })}
+          </div>
+        </Card>
+
+        {/* ── Billing ── */}
+        <Card>
+          <SectionHeader
+            title="Billing"
+            description="Manage your subscription and payment details."
+          />
+
+          <div className="flex items-center gap-3 mb-4">
+            <span className="text-sm text-slate-400">Subscription status</span>
+            <StatusBadge status={subscriptionStatus} />
+          </div>
+
+          {stripeCustomerId ? (
+            <div className="flex items-center gap-3">
               <button
-                key={i}
                 type="button"
-                onClick={() => setSizeIndex(active ? null : i)}
-                className={`w-full flex items-center justify-between rounded-lg border px-4 py-3 text-sm transition-colors ${
-                  active
-                    ? 'border-blue-500 bg-blue-50 text-blue-700 font-medium'
-                    : 'border-gray-200 text-gray-700 hover:border-gray-300'
-                }`}
+                onClick={handleManageBilling}
+                disabled={portalLoading}
+                className="border border-slate-700 text-slate-300 text-sm px-5 py-2.5 rounded-xl hover:border-slate-500 hover:text-slate-100 disabled:opacity-40 transition-colors"
               >
-                <span>{opt.label}</span>
-                {active && (
-                  <svg className="h-4 w-4 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                  </svg>
-                )}
+                {portalLoading ? 'Opening…' : 'Manage billing'}
               </button>
-            )
-          })}
-        </div>
-      </section>
+              {portalError && <span className="text-sm text-red-400">{portalError}</span>}
+            </div>
+          ) : (
+            <a
+              href="/#pricing"
+              className="inline-block bg-red-700 hover:bg-red-600 text-white text-sm font-bold px-5 py-2.5 rounded-xl transition-colors"
+            >
+              Start free trial
+            </a>
+          )}
+        </Card>
 
-      {/* ── Save ── */}
-      <div className="flex items-center gap-3">
-        <button
-          type="button"
-          onClick={handleSave}
-          disabled={saving}
-          className="rounded-lg bg-gray-900 px-6 py-2.5 text-sm font-semibold text-white hover:bg-gray-700 disabled:opacity-40 transition-colors"
-        >
-          {saving ? 'Saving…' : 'Save changes'}
-        </button>
-        {saved && <span className="text-sm text-green-600 font-medium">Saved!</span>}
-        {error && <span className="text-sm text-red-600">{error}</span>}
-      </div>
+        {/* ── Notifications ── */}
+        <Card>
+          <SectionHeader
+            title="Notifications"
+            description="Control how and when you receive updates."
+          />
 
-      {/* ── Billing ── */}
-      <section className="space-y-5">
-        <SectionHeader
-          title="Billing"
-          description="Manage your subscription and payment details."
-        />
+          <div className="flex items-center gap-3">
+            <span className="text-sm text-slate-400">Daily digest emails</span>
+            <span className="inline-flex items-center rounded-full border border-green-800 bg-green-950 px-3 py-1 text-xs font-medium text-green-400">
+              Enabled
+            </span>
+          </div>
+        </Card>
 
-        <div className="flex items-center gap-3">
-          <span className="text-sm text-gray-600">Subscription status</span>
-          <StatusBadge status={subscriptionStatus} />
-        </div>
+        {/* ── Test digest ── */}
+        <Card>
+          <SectionHeader
+            title="Email digest"
+            description="Send a preview digest to your email using your current preferences."
+          />
 
-        {stripeCustomerId ? (
           <div className="flex items-center gap-3">
             <button
               type="button"
-              onClick={handleManageBilling}
-              disabled={portalLoading}
-              className="rounded-lg border border-gray-300 px-5 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-40 transition-colors"
+              onClick={handleTestDigest}
+              disabled={testSending}
+              className="border border-slate-700 text-slate-400 text-sm px-5 py-2.5 rounded-xl hover:border-slate-500 hover:text-slate-200 disabled:opacity-40 transition-colors"
             >
-              {portalLoading ? 'Opening…' : 'Manage billing'}
+              {testSending ? 'Sending…' : 'Send test digest'}
             </button>
-            {portalError && <span className="text-sm text-red-600">{portalError}</span>}
+            {testResult && (
+              <span className={`text-sm ${testResult.ok ? 'text-green-400' : 'text-red-400'}`}>
+                {testResult.message}
+              </span>
+            )}
           </div>
-        ) : (
-          <a
-            href="/#pricing"
-            className="inline-block rounded-lg bg-gray-900 px-5 py-2 text-sm font-semibold text-white hover:bg-gray-700 transition-colors"
-          >
-            Start free trial
-          </a>
-        )}
-      </section>
+        </Card>
 
-      {/* ── Notifications ── */}
-      <section className="space-y-5">
-        <SectionHeader
-          title="Notifications"
-          description="Control how and when you receive updates."
-        />
-
-        <div className="flex items-center gap-3">
-          <span className="text-sm text-gray-600">Daily digest emails</span>
-          <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-700">
-            Enabled
-          </span>
-        </div>
-      </section>
-
-      {/* ── Test digest ── */}
-      <section className="space-y-5">
-        <SectionHeader
-          title="Email digest"
-          description="Send a preview digest to your email using your current preferences."
-        />
-
+        {/* ── Save ── */}
         <div className="flex items-center gap-3">
           <button
             type="button"
-            onClick={handleTestDigest}
-            disabled={testSending}
-            className="rounded-lg border border-gray-300 px-5 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-40 transition-colors"
+            onClick={handleSave}
+            disabled={saving}
+            className="bg-red-700 hover:bg-red-600 text-white font-bold px-8 py-3 rounded-xl text-sm disabled:opacity-40 transition-colors"
           >
-            {testSending ? 'Sending…' : 'Send test digest'}
+            {saving ? 'Saving…' : 'Save changes'}
           </button>
-          {testResult && (
-            <span className={`text-sm ${testResult.ok ? 'text-green-600' : 'text-red-600'}`}>
-              {testResult.message}
-            </span>
-          )}
+          {saved && <span className="text-green-400 text-sm">Saved!</span>}
+          {error && <span className="text-sm text-red-400">{error}</span>}
         </div>
-      </section>
 
+      </div>
     </div>
   )
 }
