@@ -20,11 +20,11 @@ async function fetchOpportunities(
   // Fetch user statuses for these opportunities
   const { data: userOpps } = await supabase
     .from('user_opportunities')
-    .select('opportunity_id, status, id')
+    .select('opportunity_id, status, id, notes, bid_due_date, decision_date')
     .eq('user_id', userId)
 
   const statusMap = new Map(
-    (userOpps ?? []).map((uo) => [uo.opportunity_id, { status: uo.status, id: uo.id }])
+    (userOpps ?? []).map((uo) => [uo.opportunity_id, { status: uo.status, id: uo.id, notes: uo.notes, bid_due_date: uo.bid_due_date, decision_date: uo.decision_date }])
   )
 
   return opps.map((opp) => {
@@ -33,6 +33,9 @@ async function fetchOpportunities(
       ...opp,
       status: uo?.status ?? null,
       user_opportunity_id: uo?.id ?? null,
+      notes: uo?.notes ?? null,
+      bid_due_date: uo?.bid_due_date ?? null,
+      decision_date: uo?.decision_date ?? null,
     }
   })
 }

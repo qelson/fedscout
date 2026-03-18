@@ -3,7 +3,7 @@
 import { useState, useEffect, useTransition } from 'react'
 import Link from 'next/link'
 import { OpportunityWithStatus, OppStatus, UserPreferences } from '@/lib/types'
-import { updateOpportunityStatus } from './actions'
+import { updateOpportunityStatus, updateOpportunityNotes, updateOpportunityDates } from './actions'
 import { logout } from '@/app/actions/auth'
 import { scoreOpportunity, getScoreColor, getScoreBg, getScoreLabel, getScoreBreakdown } from '@/lib/scoring'
 
@@ -64,6 +64,18 @@ function OpportunityCard({
   briefLoading,
   isExpanded,
   onGetBrief,
+  noteText,
+  notesOpen,
+  onToggleNotes,
+  onNoteChange,
+  onNoteBlur,
+  datesOpen,
+  onToggleDates,
+  bidDueDate,
+  decisionDate,
+  onBidDueDateChange,
+  onDecisionDateChange,
+  onDatesBlur,
 }: {
   opp: OpportunityWithStatus
   status: OppStatus | null
@@ -76,6 +88,18 @@ function OpportunityCard({
   briefLoading: boolean
   isExpanded: boolean
   onGetBrief: () => void
+  noteText: string
+  notesOpen: boolean
+  onToggleNotes: () => void
+  onNoteChange: (text: string) => void
+  onNoteBlur: () => void
+  datesOpen: boolean
+  onToggleDates: () => void
+  bidDueDate: string
+  decisionDate: string
+  onBidDueDateChange: (date: string) => void
+  onDecisionDateChange: (date: string) => void
+  onDatesBlur: () => void
 }) {
   const [showTooltip, setShowTooltip] = useState(false)
   const [mounted, setMounted] = useState(false)
@@ -206,6 +230,25 @@ function OpportunityCard({
           )}
           <button
             type="button"
+            onClick={onToggleNotes}
+            className="relative text-xs px-2 py-1.5 rounded-lg border border-slate-700 text-slate-500 hover:text-slate-300 hover:border-slate-600 transition-colors"
+            title="Add notes"
+          >
+            ✎
+            {noteText && (
+              <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-blue-500" />
+            )}
+          </button>
+          <button
+            type="button"
+            onClick={onToggleDates}
+            className="text-xs px-2 py-1.5 rounded-lg border border-slate-700 text-slate-500 hover:text-slate-300 hover:border-slate-600 transition-colors"
+            title="Set dates"
+          >
+            📅
+          </button>
+          <button
+            type="button"
             onClick={onGetBrief}
             className="ml-auto flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg border border-slate-700 text-slate-400 hover:border-blue-600 hover:text-blue-400 transition-colors"
           >
@@ -219,6 +262,49 @@ function OpportunityCard({
           </button>
         </div>
       </div>
+
+      {/* Notes panel */}
+      {mounted && notesOpen && (
+        <div className="mt-2 pt-2 border-t border-slate-800">
+          <textarea
+            rows={3}
+            placeholder="Add your notes about this opportunity..."
+            value={noteText}
+            onChange={e => onNoteChange(e.target.value)}
+            onBlur={onNoteBlur}
+            className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-300 placeholder-slate-600 focus:border-red-600 focus:outline-none resize-none"
+          />
+          <p className="text-slate-600 text-xs mt-1">Auto-saves when you click away</p>
+        </div>
+      )}
+
+      {/* Dates panel */}
+      {mounted && datesOpen && (
+        <div className="mt-2 pt-2 border-t border-slate-800">
+          <div className="flex gap-3">
+            <div className="flex-1">
+              <p className="text-slate-500 text-xs mb-1">Bid due date</p>
+              <input
+                type="date"
+                value={bidDueDate}
+                onChange={e => onBidDueDateChange(e.target.value)}
+                onBlur={onDatesBlur}
+                className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-300 focus:border-red-600 focus:outline-none"
+              />
+            </div>
+            <div className="flex-1">
+              <p className="text-slate-500 text-xs mb-1">Decision date</p>
+              <input
+                type="date"
+                value={decisionDate}
+                onChange={e => onDecisionDateChange(e.target.value)}
+                onBlur={onDatesBlur}
+                className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-300 focus:border-red-600 focus:outline-none"
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Brief expansion panel */}
       {mounted && isExpanded && (
@@ -285,6 +371,19 @@ export default function DashboardClient({
   const [briefs, setBriefs] = useState<Record<string, string>>({})
   const [briefLoading, setBriefLoading] = useState<Record<string, boolean>>({})
   const [expandedBrief, setExpandedBrief] = useState<string | null>(null)
+
+  const [notes, setNotes] = useState<Record<string, string>>(() =>
+    Object.fromEntries(opportunities.map(o => [o.id, o.notes ?? '']))
+  )
+  const [notesOpen, setNotesOpen] = useState<string | null>(null)
+
+  const [datesOpen, setDatesOpen] = useState<string | null>(null)
+  const [bidDueDates, setBidDueDates] = useState<Record<string, string>>(() =>
+    Object.fromEntries(opportunities.map(o => [o.id, o.bid_due_date ?? '']))
+  )
+  const [decisionDates, setDecisionDates] = useState<Record<string, string>>(() =>
+    Object.fromEntries(opportunities.map(o => [o.id, o.decision_date ?? '']))
+  )
 
   async function fetchBrief(opp: OpportunityWithStatus) {
     if (briefs[opp.id]) {
@@ -365,13 +464,25 @@ export default function DashboardClient({
     return d > today && d <= sevenDaysFromNow
   })
 
-  const closingSoonList = opportunities
-    .filter((o) => {
-      if (!o.response_deadline) return false
-      const d = new Date(o.response_deadline)
-      return d > today && d <= fourteenDaysFromNow
-    })
-    .slice(0, 3)
+  const closingSoonList = [
+    ...opportunities
+      .filter((o) => {
+        if (!o.response_deadline) return false
+        const d = new Date(o.response_deadline)
+        return d > today && d <= fourteenDaysFromNow
+      })
+      .map(o => ({ title: o.title, deadline: o.response_deadline!, id: o.id, type: 'deadline' as const })),
+    ...opportunities
+      .filter(o => {
+        const bid = bidDueDates[o.id]
+        if (!bid || statuses[o.id] !== 'pursuing') return false
+        const d = new Date(bid)
+        return d > today && d <= fourteenDaysFromNow
+      })
+      .map(o => ({ title: o.title, deadline: bidDueDates[o.id], id: o.id + '_bid', type: 'bid' as const })),
+  ]
+    .sort((a, b) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime())
+    .slice(0, 4)
 
   // Top agencies
   const agencyCounts = opportunities.reduce((acc, o) => {
@@ -643,6 +754,18 @@ export default function DashboardClient({
                     briefLoading={!!briefLoading[opp.id]}
                     isExpanded={expandedBrief === opp.id}
                     onGetBrief={() => fetchBrief(opp)}
+                    noteText={notes[opp.id] ?? ''}
+                    notesOpen={notesOpen === opp.id}
+                    onToggleNotes={() => setNotesOpen(notesOpen === opp.id ? null : opp.id)}
+                    onNoteChange={text => setNotes(prev => ({ ...prev, [opp.id]: text }))}
+                    onNoteBlur={() => updateOpportunityNotes(opp.id, notes[opp.id] ?? '')}
+                    datesOpen={datesOpen === opp.id}
+                    onToggleDates={() => setDatesOpen(datesOpen === opp.id ? null : opp.id)}
+                    bidDueDate={bidDueDates[opp.id] ?? ''}
+                    decisionDate={decisionDates[opp.id] ?? ''}
+                    onBidDueDateChange={date => setBidDueDates(prev => ({ ...prev, [opp.id]: date }))}
+                    onDecisionDateChange={date => setDecisionDates(prev => ({ ...prev, [opp.id]: date }))}
+                    onDatesBlur={() => updateOpportunityDates(opp.id, bidDueDates[opp.id] || null, decisionDates[opp.id] || null)}
                   />
                 ))}
               </div>
@@ -718,16 +841,21 @@ export default function DashboardClient({
                 <p className="text-xs" style={{ color: '#334155' }}>Nothing in the next 14 days</p>
               ) : (
                 <div className="space-y-3">
-                  {closingSoonList.map((opp) => {
-                    const d = new Date(opp.response_deadline!)
+                  {closingSoonList.map((item) => {
+                    const d = new Date(item.deadline)
                     const days = Math.ceil((d.getTime() - today.getTime()) / 86_400_000)
                     const isUrgent = days < 7
                     const dlLabel = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
                     return (
-                      <div key={opp.id} className="flex items-start justify-between gap-2">
-                        <span className="text-sm leading-snug flex-1" style={{ color: '#94a3b8' }}>
-                          {opp.title.split(' ').slice(0, 5).join(' ')}…
-                        </span>
+                      <div key={item.id} className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <span className="text-sm leading-snug block" style={{ color: '#94a3b8' }}>
+                            {item.title.split(' ').slice(0, 5).join(' ')}…
+                          </span>
+                          {item.type === 'bid' && (
+                            <span className="text-xs" style={{ color: '#64748b' }}>📋 Bid due</span>
+                          )}
+                        </div>
                         <span
                           className="rounded px-1.5 py-0.5 text-xs flex-shrink-0"
                           style={

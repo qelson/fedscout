@@ -18,6 +18,7 @@ export interface UserOpportunity {
   user_id: string
   opportunity_id: string
   status: OppStatus
+  notes?: string | null
   created_at: string
   updated_at: string
 }
@@ -27,6 +28,9 @@ export type OppStatus = 'new' | 'interested' | 'pursuing' | 'pass'
 export interface OpportunityWithStatus extends Opportunity {
   status: OppStatus | null
   user_opportunity_id: string | null
+  notes?: string | null
+  bid_due_date?: string | null
+  decision_date?: string | null
 }
 
 export interface UserPreferences {
