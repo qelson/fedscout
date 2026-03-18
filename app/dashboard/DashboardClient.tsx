@@ -10,10 +10,24 @@ import { logout } from '@/app/actions/auth'
 
 function formatValue(min: number | null, max: number | null): string {
   const val = min ?? max
-  if (val === null) return '—'
+  if (val === null) return ''
   if (val >= 1_000_000) return `$${(val / 1_000_000).toFixed(1)}M`
-  if (val >= 1_000) return `$${Math.round(val / 1_000)}K`
+  if (val >= 1_000) return `$${Math.round(val / 1_000)}k`
   return `$${val.toLocaleString()}`
+}
+
+function getAgencyShortName(agency: string): string {
+  const up = agency.toUpperCase()
+  if (up.includes('DEFENSE'))          return 'DoD'
+  if (up.includes('HOMELAND'))         return 'DHS'
+  if (up.includes('VETERANS'))         return 'VA'
+  if (up.includes('COMMERCE'))         return 'Commerce'
+  if (up.includes('HEALTH'))           return 'HHS'
+  if (up.includes('NASA'))             return 'NASA'
+  if (up.includes('GENERAL SERVICES')) return 'GSA'
+  if (up.includes('ENERGY'))           return 'DOE'
+  const first = agency.split(' ')[0]
+  return first.length > 12 ? first.slice(0, 12) + '…' : first
 }
 
 function deadlineInfo(deadline: string | null): { label: string; color: string; bold: boolean } {
@@ -48,21 +62,22 @@ function OpportunityCard({
 }) {
   const dl = deadlineInfo(opp.response_deadline)
   const value = formatValue(opp.estimated_value_min, opp.estimated_value_max)
+  const agencyShort = opp.agency ? getAgencyShortName(opp.agency) : null
 
   return (
     <div
-      className="px-4 py-3 border-b transition-colors"
+      className="px-5 py-4 border-b transition-colors"
       style={{ borderColor: 'rgba(30,41,59,0.5)' }}
-      onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'rgba(30,41,59,0.3)')}
+      onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'rgba(30,41,59,0.5)')}
       onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
     >
       {/* Title row */}
-      <div className="flex items-start justify-between gap-3 mb-1.5">
+      <div className="flex items-start justify-between gap-3 mb-2">
         <a
           href={opp.sam_url}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-xs font-semibold leading-snug flex-1 transition-colors"
+          className="text-sm font-semibold leading-snug flex-1 transition-colors"
           style={{ color: '#cbd5e1' }}
           onMouseEnter={e => (e.currentTarget.style.color = '#93c5fd')}
           onMouseLeave={e => (e.currentTarget.style.color = '#cbd5e1')}
@@ -78,16 +93,20 @@ function OpportunityCard({
       </div>
 
       {/* Meta row */}
-      <div className="flex items-center gap-1.5 mb-2">
-        <span
-          className="rounded px-1.5 py-0.5 text-xs font-bold"
-          style={{ backgroundColor: '#172554', color: '#60a5fa' }}
-        >
-          {opp.agency?.split(' ').slice(0, 2).join(' ') ?? '—'}
-        </span>
-        <span className="text-xs" style={{ color: '#475569' }}>
-          · Est. {value}
-        </span>
+      <div className="flex items-center gap-1.5 mb-3">
+        {agencyShort && (
+          <span
+            className="rounded px-1.5 py-0.5 text-xs font-bold"
+            style={{ backgroundColor: '#172554', color: '#60a5fa' }}
+          >
+            {agencyShort}
+          </span>
+        )}
+        {value && (
+          <span className="text-sm" style={{ color: '#475569' }}>
+            · Est. {value}
+          </span>
+        )}
       </div>
 
       {/* Bottom row: status buttons + deadline */}
@@ -97,9 +116,9 @@ function OpportunityCard({
             const active = status === key
             let style: React.CSSProperties
             if (active) {
-              if (key === 'pursuing')   style = { backgroundColor: '#172554', color: '#93c5fd', borderColor: '#1e3a8a' }
+              if (key === 'pursuing')       style = { backgroundColor: '#172554', color: '#93c5fd', borderColor: '#1e3a8a' }
               else if (key === 'interested') style = { backgroundColor: '#052e16', color: '#4ade80', borderColor: '#14532d' }
-              else                      style = { backgroundColor: '#1e293b', color: '#94a3b8', borderColor: '#334155' }
+              else                          style = { backgroundColor: '#1e293b', color: '#94a3b8', borderColor: '#334155' }
             } else {
               style = { backgroundColor: 'transparent', color: '#475569', borderColor: '#334155' }
             }
@@ -108,7 +127,7 @@ function OpportunityCard({
                 key={key}
                 type="button"
                 onClick={() => onStatusChange(opp.id, key)}
-                className="rounded border px-2 py-1 text-xs transition-colors"
+                className="rounded border px-3 py-1.5 text-xs transition-colors"
                 style={style}
                 onMouseEnter={e => { if (!active) e.currentTarget.style.borderColor = '#475569' }}
                 onMouseLeave={e => { if (!active) e.currentTarget.style.borderColor = '#334155' }}
@@ -125,7 +144,9 @@ function OpportunityCard({
           >
             {dl.label}
           </span>
-          <span className="text-xs font-extrabold" style={{ color: '#f1f5f9' }}>{value}</span>
+          {value && (
+            <span className="text-xs font-extrabold" style={{ color: '#f1f5f9' }}>{value}</span>
+          )}
         </div>
       </div>
     </div>
@@ -237,13 +258,16 @@ export default function DashboardClient({
         className="sticky top-0 z-50 border-b"
         style={{ backgroundColor: '#0a0f1e', borderColor: '#1e293b', height: '3.5rem' }}
       >
-        <div className="max-w-7xl mx-auto px-6 h-full flex items-center justify-between">
-          {/* Left: logo + nav tabs */}
+        <div className="max-w-7xl mx-auto px-8 h-full flex items-center justify-between">
+
+          {/* Left: logo only */}
+          <Link href="/" className="text-4xl font-extrabold tracking-tight">
+            <span className="text-white">Fed</span><span className="text-red-500">Scout</span>
+          </Link>
+
+          {/* Right: nav tabs + email + avatar + sign out */}
           <div className="flex items-center h-full">
-            <Link href="/" className="text-4xl font-extrabold tracking-tight mr-6">
-              <span className="text-white">Fed</span><span className="text-red-500">Scout</span>
-            </Link>
-            <nav className="flex items-center h-full">
+            <nav className="flex items-center h-full mr-6">
               {[
                 { label: 'Dashboard', href: '/dashboard', active: true },
                 { label: 'Pipeline',  href: '/dashboard', active: false },
@@ -262,28 +286,29 @@ export default function DashboardClient({
                 </Link>
               ))}
             </nav>
-          </div>
 
-          {/* Right */}
-          <div className="flex items-center gap-4">
-            <span className="hidden sm:block text-xs" style={{ color: '#475569' }}>{email}</span>
+            <div className="flex items-center gap-4">
+              <span className="hidden sm:block text-xs" style={{ color: '#475569' }}>{email}</span>
 
-            {/* Avatar */}
-            <div
-              className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
-              style={{ backgroundColor: '#1e3a8a', color: '#93c5fd' }}
-            >
-              {initials}
-            </div>
-
-            <form action={logout}>
-              <button type="submit" className="text-xs transition-colors" style={{ color: '#475569' }}
-                onMouseEnter={e => (e.currentTarget.style.color = '#94a3b8')}
-                onMouseLeave={e => (e.currentTarget.style.color = '#475569')}
+              <div
+                className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
+                style={{ backgroundColor: '#1e3a8a', color: '#93c5fd' }}
               >
-                Sign out
-              </button>
-            </form>
+                {initials}
+              </div>
+
+              <form action={logout}>
+                <button
+                  type="submit"
+                  className="text-xs transition-colors"
+                  style={{ color: '#475569' }}
+                  onMouseEnter={e => (e.currentTarget.style.color = '#94a3b8')}
+                  onMouseLeave={e => (e.currentTarget.style.color = '#475569')}
+                >
+                  Sign out
+                </button>
+              </form>
+            </div>
           </div>
         </div>
       </header>
@@ -291,21 +316,21 @@ export default function DashboardClient({
       {/* ── Urgent banner ── */}
       {closingSoon > 0 && (
         <div
-          className="border-b px-6 py-2 flex items-center justify-between"
+          className="border-b px-8 py-2 flex items-center justify-between"
           style={{ backgroundColor: '#1c1400', borderColor: '#78350f', borderBottomWidth: '0.5px' }}
         >
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: '#d97706' }} />
-            <span className="text-xs font-semibold" style={{ color: '#fbbf24' }}>
+            <span className="text-xs font-semibold whitespace-normal" style={{ color: '#fbbf24' }}>
               {closingSoon} contract{closingSoon > 1 ? 's' : ''} closing within 7 days
             </span>
-            <span className="text-xs hidden sm:block" style={{ color: '#92400e' }}>
+            <span className="text-xs hidden sm:block whitespace-normal" style={{ color: '#92400e' }}>
               — {closingSoonContracts.slice(0, 2).map(o => o.title.split(' ').slice(0, 4).join(' ')).join(', ')}
             </span>
           </div>
           <button
             type="button"
-            className="rounded border px-3 py-1 text-xs transition-colors"
+            className="rounded border px-3 py-1 text-xs transition-colors flex-shrink-0 ml-4"
             style={{ borderColor: '#78350f', color: '#d97706' }}
             onClick={() => setActiveTab('all')}
           >
@@ -315,14 +340,14 @@ export default function DashboardClient({
       )}
 
       {/* ── Body ── */}
-      <div className="max-w-7xl mx-auto px-6 py-5">
+      <div className="max-w-7xl mx-auto px-8 py-5">
 
         {/* Greeting */}
         <div className="mb-5">
-          <h1 className="text-lg font-extrabold tracking-tight" style={{ color: '#f1f5f9' }}>
+          <h1 className="text-2xl font-extrabold tracking-tight" style={{ color: '#f1f5f9' }}>
             {greeting}, {firstName}
           </h1>
-          <p className="text-xs mt-1" style={{ color: '#475569' }}>
+          <p className="text-sm mt-1 text-slate-400">
             {dateLabel} · {opportunities.length} contracts match your profile
           </p>
         </div>
@@ -364,22 +389,22 @@ export default function DashboardClient({
               className="rounded-xl p-3 border"
               style={{ backgroundColor: '#0f172a', borderColor: '#1e293b' }}
             >
-              <p className="text-2xl font-extrabold mb-0.5" style={{ color: valueColor }}>{value}</p>
-              <p className="text-xs uppercase tracking-wide mb-1" style={{ color: '#475569' }}>{label}</p>
+              <p className="text-3xl font-extrabold mb-0.5" style={{ color: valueColor }}>{value}</p>
+              <p className="text-xs uppercase tracking-wider mb-1" style={{ color: '#475569' }}>{label}</p>
               <p className="text-xs" style={{ color: subColor }}>{sub}</p>
             </div>
           ))}
         </div>
 
         {/* Main layout: feed + sidebar */}
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_200px] gap-3">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-4">
 
           {/* ── Left: opportunity feed ── */}
           <div className="rounded-xl border overflow-hidden" style={{ backgroundColor: '#0f172a', borderColor: '#1e293b' }}>
 
             {/* Feed header */}
             <div
-              className="flex items-center justify-between px-4 py-3 border-b"
+              className="flex items-center justify-between px-5 py-3 border-b"
               style={{ borderColor: '#1e293b' }}
             >
               <div className="flex items-center gap-2">
@@ -464,15 +489,15 @@ export default function DashboardClient({
           {/* ── Right: sidebar ── */}
           <div className="flex flex-col gap-3">
 
-            {/* Next digest */}
+            {/* Daily Briefing */}
             <div
-              className="rounded-xl border p-3"
+              className="rounded-xl border p-4"
               style={{ backgroundColor: '#172554', borderColor: '#1e3a8a' }}
             >
-              <p className="text-xs font-bold uppercase tracking-wide mb-1" style={{ color: '#93c5fd' }}>
+              <p className="text-sm font-bold mb-1" style={{ color: '#93c5fd' }}>
                 Daily Briefing
               </p>
-              <p className="text-xs mb-2" style={{ color: '#60a5fa' }}>
+              <p className="text-xs mb-2 leading-relaxed" style={{ color: '#60a5fa' }}>
                 Your matched contracts delivered to your inbox every morning at 8am EST.
               </p>
               <p className="text-xs font-semibold mb-2" style={{ color: '#93c5fd' }}>
@@ -488,20 +513,22 @@ export default function DashboardClient({
 
             {/* Top agencies */}
             <div
-              className="rounded-xl border p-3"
+              className="rounded-xl border p-4"
               style={{ backgroundColor: '#0f172a', borderColor: '#1e293b' }}
             >
-              <p className="text-xs font-bold uppercase tracking-wide mb-3" style={{ color: '#475569' }}>
+              <p className="text-sm font-bold mb-3" style={{ color: '#475569' }}>
                 Top agencies
               </p>
               {topAgencies.length === 0 ? (
                 <p className="text-xs" style={{ color: '#334155' }}>No data yet</p>
               ) : (
-                <div className="space-y-2.5">
+                <div className="space-y-3">
                   {topAgencies.map(([agency, count]) => (
                     <div key={agency}>
                       <div className="flex items-center justify-between mb-1">
-                        <span className="text-xs truncate" style={{ color: '#94a3b8' }}>{agency}</span>
+                        <span className="text-sm" style={{ color: '#94a3b8' }}>
+                          {getAgencyShortName(agency)}
+                        </span>
                         <span className="text-xs ml-2 flex-shrink-0" style={{ color: '#475569' }}>{count}</span>
                       </div>
                       <div className="h-1 rounded-full" style={{ backgroundColor: '#1e293b' }}>
@@ -518,16 +545,16 @@ export default function DashboardClient({
 
             {/* Deadlines */}
             <div
-              className="rounded-xl border p-3"
+              className="rounded-xl border p-4"
               style={{ backgroundColor: '#0f172a', borderColor: '#1e293b' }}
             >
-              <p className="text-xs font-bold uppercase tracking-wide mb-3" style={{ color: '#475569' }}>
+              <p className="text-sm font-bold mb-3" style={{ color: '#475569' }}>
                 Closing soon
               </p>
               {closingSoonList.length === 0 ? (
                 <p className="text-xs" style={{ color: '#334155' }}>Nothing in the next 14 days</p>
               ) : (
-                <div className="space-y-2">
+                <div className="space-y-3">
                   {closingSoonList.map((opp) => {
                     const d = new Date(opp.response_deadline!)
                     const days = Math.ceil((d.getTime() - today.getTime()) / 86_400_000)
@@ -535,7 +562,7 @@ export default function DashboardClient({
                     const dlLabel = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
                     return (
                       <div key={opp.id} className="flex items-start justify-between gap-2">
-                        <span className="text-xs leading-snug flex-1" style={{ color: '#94a3b8' }}>
+                        <span className="text-sm leading-snug flex-1" style={{ color: '#94a3b8' }}>
                           {opp.title.split(' ').slice(0, 5).join(' ')}…
                         </span>
                         <span
