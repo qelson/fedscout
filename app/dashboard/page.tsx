@@ -8,31 +8,12 @@ async function fetchOpportunities(
   prefs: UserPreferences,
   userId: string
 ): Promise<OpportunityWithStatus[]> {
-  // Build OR filter: match by NAICS codes OR keywords in title/description
-  const filters: string[] = []
-
-  if (prefs.naics_codes?.length) {
-    filters.push(`naics_code.in.(${prefs.naics_codes.join(',')})`)
-  }
-
-  for (const kw of prefs.keywords ?? []) {
-    const safe = kw.replace(/[%_\\]/g, '\\$&')
-    if (safe) {
-      filters.push(`title.ilike.%${safe}%`, `description.ilike.%${safe}%`)
-    }
-  }
-
-  let query = supabase
+  // Fetch all opportunities — scoring happens client-side
+  const { data: opps, error } = await supabase
     .from('opportunities')
     .select('*')
     .order('response_deadline', { ascending: true, nullsFirst: false })
-    .limit(200)
-
-  if (filters.length) {
-    query = query.or(filters.join(','))
-  }
-
-  const { data: opps, error } = await query
+    .limit(500)
 
   if (error || !opps) return []
 
