@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { savePreferences } from '@/app/onboarding/actions'
 import { sendTestDigest } from './actions'
@@ -106,6 +106,17 @@ export default function SettingsClient({
   const [testSending, setTestSending] = useState(false)
   const [testResult, setTestResult] = useState<{ ok: boolean; message: string } | null>(null)
 
+  const [weeklySending, setWeeklySending] = useState(false)
+  const [weeklyResult, setWeeklyResult] = useState<{ ok: boolean; message: string } | null>(null)
+
+  const [digestLogs, setDigestLogs] = useState<{ sent_at: string; opportunity_count: number }[]>([])
+
+  useEffect(() => {
+    fetch('/api/digest-logs').then(r => r.json()).then(data => {
+      if (data.logs) setDigestLogs(data.logs)
+    })
+  }, [])
+
   const [portalLoading, setPortalLoading] = useState(false)
   const [portalError, setPortalError] = useState<string | null>(null)
 
@@ -152,6 +163,20 @@ export default function SettingsClient({
       return
     }
     window.location.href = data.url
+  }
+
+  // ── Weekly summary ───────────────────────────────────────────────────────
+  async function handleTestWeekly() {
+    setWeeklySending(true)
+    setWeeklyResult(null)
+    const res = await fetch('/api/send-weekly-summary', { method: 'POST' })
+    const data = await res.json()
+    setWeeklySending(false)
+    if (!res.ok || data.error) {
+      setWeeklyResult({ ok: false, message: data.error ?? 'Failed to send weekly summary.' })
+    } else {
+      setWeeklyResult({ ok: true, message: 'Weekly summary sent! Check your inbox.' })
+    }
   }
 
   // ── Test digest ──────────────────────────────────────────────────────────
@@ -428,7 +453,7 @@ export default function SettingsClient({
             description="Send a preview digest to your email using your current preferences."
           />
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <button
               type="button"
               onClick={handleTestDigest}
@@ -437,12 +462,57 @@ export default function SettingsClient({
             >
               {testSending ? 'Sending…' : 'Send test digest'}
             </button>
+            <button
+              type="button"
+              onClick={handleTestWeekly}
+              disabled={weeklySending}
+              className="border border-slate-700 text-slate-400 text-sm px-5 py-2.5 rounded-xl hover:border-slate-500 hover:text-slate-200 disabled:opacity-40 transition-colors"
+            >
+              {weeklySending ? 'Sending…' : 'Send test weekly summary'}
+            </button>
             {testResult && (
               <span className={`text-sm ${testResult.ok ? 'text-green-400' : 'text-red-400'}`}>
                 {testResult.message}
               </span>
             )}
+            {weeklyResult && (
+              <span className={`text-sm ${weeklyResult.ok ? 'text-green-400' : 'text-red-400'}`}>
+                {weeklyResult.message}
+              </span>
+            )}
           </div>
+        </Card>
+
+        {/* ── Email history ── */}
+        <Card>
+          <SectionHeader
+            title="Email history"
+            description="Recent digest emails sent to your account."
+          />
+          {digestLogs.length === 0 ? (
+            <p className="text-slate-500 text-sm">No digest emails sent yet. Your first will arrive tomorrow at 8am EST.</p>
+          ) : (
+            <div className="space-y-3">
+              {digestLogs.map((log, i) => (
+                <div
+                  key={i}
+                  className="flex items-center justify-between py-2 border-b border-slate-800 last:border-0"
+                >
+                  <span className="text-slate-400 text-sm">
+                    {new Date(log.sent_at).toLocaleDateString('en-US', {
+                      month: 'short', day: 'numeric', year: 'numeric',
+                    })}{' · '}
+                    {new Date(log.sent_at).toLocaleTimeString('en-US', {
+                      hour: 'numeric', minute: '2-digit',
+                    })}
+                  </span>
+                  <span className="text-slate-500 text-sm">
+                    {log.opportunity_count} {log.opportunity_count === 1 ? 'contract' : 'contracts'} included
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
         </Card>
 
         {/* ── Save ── */}
