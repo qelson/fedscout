@@ -2,9 +2,10 @@
 
 import { useState, useTransition } from 'react'
 import Link from 'next/link'
-import { OpportunityWithStatus, OppStatus } from '@/lib/types'
+import { OpportunityWithStatus, OppStatus, UserPreferences } from '@/lib/types'
 import { updateOpportunityStatus } from './actions'
 import { logout } from '@/app/actions/auth'
+import { scoreOpportunity, getScoreColor, getScoreBg, getScoreLabel } from '@/lib/scoring'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -55,10 +56,16 @@ function OpportunityCard({
   opp,
   status,
   onStatusChange,
+  score,
+  showTopMatch,
+  showScore,
 }: {
   opp: OpportunityWithStatus
   status: OppStatus | null
   onStatusChange: (id: string, s: OppStatus) => void
+  score: number
+  showTopMatch: boolean
+  showScore: boolean
 }) {
   const dl = deadlineInfo(opp.response_deadline)
   const value = formatValue(opp.estimated_value_min, opp.estimated_value_max)
@@ -84,12 +91,24 @@ function OpportunityCard({
         >
           {opp.title}
         </a>
-        <span
-          className="shrink-0 rounded px-1.5 py-0.5 text-xs font-mono"
-          style={{ backgroundColor: '#1e293b', color: '#64748b' }}
-        >
-          {opp.naics_code}
-        </span>
+        <div className="flex items-center gap-1.5 shrink-0">
+          {showTopMatch && (
+            <span className="px-2 py-0.5 rounded-full border bg-green-950 border-green-800 text-green-400 text-xs font-bold">
+              Top match
+            </span>
+          )}
+          {showScore && (
+            <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full border text-xs font-bold ${getScoreBg(score)}`}>
+              <span className={getScoreColor(score)}>{score}</span>
+            </div>
+          )}
+          <span
+            className="rounded px-1.5 py-0.5 text-xs font-mono"
+            style={{ backgroundColor: '#1e293b', color: '#64748b' }}
+          >
+            {opp.naics_code}
+          </span>
+        </div>
       </div>
 
       {/* Meta row */}
@@ -167,9 +186,11 @@ const TABS: { key: FilterTab; label: string }[] = [
 export default function DashboardClient({
   opportunities,
   email,
+  userPrefs,
 }: {
   opportunities: OpportunityWithStatus[]
   email: string
+  userPrefs: UserPreferences | null
 }) {
   const [, startTransition] = useTransition()
 
@@ -189,6 +210,17 @@ export default function DashboardClient({
       if (next) await updateOpportunityStatus(oppId, next)
     })
   }
+
+  // ── Score + sort ───────────────────────────────────────────────────────────
+  const scoredOpportunities = opportunities.map(opp => ({
+    ...opp,
+    score: userPrefs ? scoreOpportunity(opp, userPrefs) : 0,
+  }))
+
+  const sortedOpportunities = [...scoredOpportunities].sort((a, b) => b.score - a.score)
+
+  const topScore = sortedOpportunities[0]?.score ?? 0
+  const topId = topScore >= 60 ? sortedOpportunities[0]?.id : null
 
   // ── Derived stats ─────────────────────────────────────────────────────────
   const today = new Date()
@@ -233,8 +265,8 @@ export default function DashboardClient({
   const topAgencies = Object.entries(agencyCounts).sort((a, b) => b[1] - a[1]).slice(0, 4)
   const maxCount = topAgencies[0]?.[1] ?? 1
 
-  // Filtered list
-  const visible = opportunities.filter((o) => {
+  // Filtered + sorted list
+  const visible = sortedOpportunities.filter((o) => {
     const s = statuses[o.id]
     if (activeTab === 'all')        return true
     if (activeTab === 'pursuing')   return s === 'pursuing'
@@ -479,6 +511,9 @@ export default function DashboardClient({
                     opp={opp}
                     status={statuses[opp.id] ?? null}
                     onStatusChange={handleStatusChange}
+                    score={opp.score}
+                    showTopMatch={opp.id === topId}
+                    showScore={!!userPrefs}
                   />
                 ))}
               </div>

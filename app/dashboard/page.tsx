@@ -77,6 +77,7 @@ export default async function DashboardPage() {
     <DashboardClient
       opportunities={opportunities}
       email={user.email ?? ''}
+      userPrefs={prefs}
     />
   )
 }
