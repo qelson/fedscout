@@ -270,7 +270,6 @@ export default function DashboardClient({
             <nav className="flex items-center h-full mr-6">
               {[
                 { label: 'Dashboard', href: '/dashboard', active: true },
-                { label: 'Pipeline',  href: '/dashboard', active: false },
                 { label: 'Settings',  href: '/settings',  active: false },
               ].map(({ label, href, active }) => (
                 <Link
