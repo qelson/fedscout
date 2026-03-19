@@ -4,6 +4,7 @@ import { useState, useEffect, useTransition } from 'react'
 import Link from 'next/link'
 import { OpportunityWithStatus, OppStatus, UserPreferences } from '@/lib/types'
 import { updateOpportunityStatus, updateOpportunityNotes, updateOpportunityDates } from './actions'
+import BidEvaluationPanel from './BidEvaluationPanel'
 import { logout } from '@/app/actions/auth'
 import { scoreOpportunity, getScoreColor, getScoreBg, getScoreLabel, getScoreBreakdown, getSetAsideBadge } from '@/lib/scoring'
 
@@ -76,6 +77,10 @@ function OpportunityCard({
   onBidDueDateChange,
   onDecisionDateChange,
   onDatesBlur,
+  evalOpen,
+  onToggleEval,
+  evaluation,
+  onEvalSave,
 }: {
   opp: OpportunityWithStatus
   status: OppStatus | null
@@ -100,6 +105,10 @@ function OpportunityCard({
   onBidDueDateChange: (date: string) => void
   onDecisionDateChange: (date: string) => void
   onDatesBlur: () => void
+  evalOpen: boolean
+  onToggleEval: () => void
+  evaluation: Record<string, any> | undefined
+  onEvalSave: (ev: Record<string, any>) => void
 }) {
   const [showTooltip, setShowTooltip] = useState(false)
   const [mounted, setMounted] = useState(false)
@@ -255,6 +264,13 @@ function OpportunityCard({
           </button>
           <button
             type="button"
+            onClick={onToggleEval}
+            className="text-xs px-3 py-1.5 rounded-lg border border-slate-700 text-slate-400 hover:border-purple-600 hover:text-purple-400 transition-colors"
+          >
+            {evalOpen ? '▲ Close' : '⊕ Evaluate'}
+          </button>
+          <button
+            type="button"
             onClick={onGetBrief}
             className="ml-auto flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg border border-slate-700 text-slate-400 hover:border-blue-600 hover:text-blue-400 transition-colors"
           >
@@ -310,6 +326,15 @@ function OpportunityCard({
             </div>
           </div>
         </div>
+      )}
+
+      {/* Evaluation panel */}
+      {mounted && evalOpen && (
+        <BidEvaluationPanel
+          opp={opp}
+          evaluation={evaluation}
+          onSave={onEvalSave}
+        />
       )}
 
       {/* Brief expansion panel */}
@@ -385,6 +410,9 @@ export default function DashboardClient({
   const [notesOpen, setNotesOpen] = useState<string | null>(null)
 
   const [datesOpen, setDatesOpen] = useState<string | null>(null)
+
+  const [evaluations, setEvaluations] = useState<Record<string, any>>({})
+  const [evalOpen, setEvalOpen] = useState<string | null>(null)
   const [bidDueDates, setBidDueDates] = useState<Record<string, string>>(() =>
     Object.fromEntries(opportunities.map(o => [o.id, o.bid_due_date ?? '']))
   )
@@ -804,6 +832,10 @@ export default function DashboardClient({
                     onBidDueDateChange={date => setBidDueDates(prev => ({ ...prev, [opp.id]: date }))}
                     onDecisionDateChange={date => setDecisionDates(prev => ({ ...prev, [opp.id]: date }))}
                     onDatesBlur={() => updateOpportunityDates(opp.id, bidDueDates[opp.id] || null, decisionDates[opp.id] || null)}
+                    evalOpen={evalOpen === opp.id}
+                    onToggleEval={() => setEvalOpen(evalOpen === opp.id ? null : opp.id)}
+                    evaluation={evaluations[opp.id]}
+                    onEvalSave={ev => setEvaluations(prev => ({ ...prev, [opp.id]: ev }))}
                   />
                 ))}
               </div>
