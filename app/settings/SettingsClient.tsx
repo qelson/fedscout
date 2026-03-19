@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { savePreferences } from '@/app/onboarding/actions'
 import { sendTestDigest } from './actions'
 import { UserPreferences } from '@/lib/types'
+import { createClient } from '@/lib/supabase/client'
 
 const NAICS_OPTIONS = [
   { code: '541511', label: 'Custom Computer Programming Services' },
@@ -121,6 +122,12 @@ export default function SettingsClient({
   const [portalLoading, setPortalLoading] = useState(false)
   const [portalError, setPortalError] = useState<string | null>(null)
 
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [passwordLoading, setPasswordLoading] = useState(false)
+  const [passwordError, setPasswordError] = useState('')
+  const [passwordSuccess, setPasswordSuccess] = useState(false)
+
   // ── NAICS helpers ────────────────────────────────────────────────────────
   const filteredNaics = NAICS_OPTIONS.filter(
     (o) =>
@@ -150,6 +157,34 @@ export default function SettingsClient({
     setAgencies((prev) =>
       prev.includes(a) ? prev.filter((x) => x !== a) : [...prev, a]
     )
+  }
+
+  // ── Password change ──────────────────────────────────────────────────────
+  async function handlePasswordChange() {
+    if (newPassword !== confirmPassword) {
+      setPasswordError('Passwords do not match')
+      return
+    }
+    if (newPassword.length < 8) {
+      setPasswordError('Password must be at least 8 characters')
+      return
+    }
+    setPasswordLoading(true)
+    setPasswordError('')
+    try {
+      const supabase = createClient()
+      const { error } = await supabase.auth.updateUser({ password: newPassword })
+      if (error) {
+        setPasswordError(error.message)
+      } else {
+        setPasswordSuccess(true)
+        setNewPassword('')
+        setConfirmPassword('')
+        setTimeout(() => setPasswordSuccess(false), 3000)
+      }
+    } finally {
+      setPasswordLoading(false)
+    }
   }
 
   // ── Billing portal ───────────────────────────────────────────────────────
@@ -438,6 +473,47 @@ export default function SettingsClient({
               )
             })}
           </div>
+        </Card>
+
+        {/* ── Change password ── */}
+        <Card>
+          <SectionHeader
+            title="Change password"
+            description="Update your FedScout account password."
+          />
+
+          <div className="space-y-3">
+            <input
+              type="password"
+              placeholder="New password"
+              value={newPassword}
+              onChange={(e) => { setNewPassword(e.target.value); setPasswordError('') }}
+              className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-slate-100 text-sm placeholder-slate-600 focus:border-red-600 focus:outline-none"
+            />
+            <input
+              type="password"
+              placeholder="Confirm new password"
+              value={confirmPassword}
+              onChange={(e) => { setConfirmPassword(e.target.value); setPasswordError('') }}
+              className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-slate-100 text-sm placeholder-slate-600 focus:border-red-600 focus:outline-none"
+            />
+          </div>
+
+          {passwordError && (
+            <p className="text-red-400 text-sm mt-3">{passwordError}</p>
+          )}
+          {passwordSuccess && (
+            <p className="text-green-400 text-sm mt-3">Password updated successfully</p>
+          )}
+
+          <button
+            type="button"
+            onClick={handlePasswordChange}
+            disabled={passwordLoading || !newPassword || !confirmPassword}
+            className="mt-4 bg-red-700 hover:bg-red-600 text-white font-bold px-6 py-2.5 rounded-xl text-sm disabled:opacity-40 transition-colors"
+          >
+            {passwordLoading ? 'Updating…' : 'Update password'}
+          </button>
         </Card>
 
         {/* ── Billing ── */}
