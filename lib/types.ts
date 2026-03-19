@@ -11,6 +11,7 @@ export interface Opportunity {
   description: string
   sam_url: string
   created_at: string
+  document_urls?: string[]
 }
 
 export interface UserOpportunity {

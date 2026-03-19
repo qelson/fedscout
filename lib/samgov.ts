@@ -11,6 +11,7 @@ export interface SamOpportunity {
   estimated_value_max: number | null
   description: string
   sam_url: string
+  document_urls: string[]
 }
 
 interface SamApiOpportunity {
@@ -24,6 +25,8 @@ interface SamApiOpportunity {
   estimatedTotalValue?: number
   description?: string
   uiLink?: string
+  resourceLinks?: string[]
+  attachmentLinks?: string[]
 }
 
 interface SamApiResponse {
@@ -52,6 +55,11 @@ function normalizeOpportunity(raw: SamApiOpportunity): SamOpportunity | null {
   const rawValue = raw.award?.amount ?? raw.estimatedTotalValue ?? null
   const estimatedValue = rawValue !== null ? Math.round(Number(rawValue)) : null
 
+  const allLinks = [...(raw.resourceLinks ?? []), ...(raw.attachmentLinks ?? [])]
+  const documentUrls = allLinks.filter(u =>
+    u && (u.toLowerCase().endsWith('.pdf') || u.toLowerCase().endsWith('.docx'))
+  )
+
   return {
     sam_notice_id: raw.noticeId,
     title: raw.title,
@@ -63,6 +71,7 @@ function normalizeOpportunity(raw: SamApiOpportunity): SamOpportunity | null {
     estimated_value_max: estimatedValue,
     description: raw.description ?? '',
     sam_url: raw.uiLink ?? `https://sam.gov/opp/${raw.noticeId}`,
+    document_urls: documentUrls,
   }
 }
 
