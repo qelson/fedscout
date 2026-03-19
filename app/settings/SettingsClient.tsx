@@ -91,6 +91,7 @@ export default function SettingsClient({
 
   const [keywords, setKeywords] = useState(initialPrefs?.keywords?.join(', ') ?? '')
   const [agencies, setAgencies] = useState<string[]>(initialPrefs?.agencies ?? [])
+  const [certifications, setCertifications] = useState<string[]>(initialPrefs?.certifications ?? [])
 
   const [anySize, setAnySize] = useState(
     !initialPrefs?.min_value && !initialPrefs?.max_value
@@ -209,6 +210,7 @@ export default function SettingsClient({
       agencies,
       min_value: selectedSize?.min ?? null,
       max_value: selectedSize?.max ?? null,
+      certifications,
     })
 
     setSaving(false)
@@ -345,6 +347,47 @@ export default function SettingsClient({
                 >
                   <input type="checkbox" checked={checked} onChange={() => toggleAgency(a)} className="sr-only" />
                   {a}
+                </label>
+              )
+            })}
+          </div>
+        </Card>
+
+        {/* ── Certifications ── */}
+        <Card>
+          <SectionHeader
+            title="Small business certifications"
+            description="We'll prioritize contracts that require your certifications."
+          />
+          <div className="grid grid-cols-1 gap-2">
+            {[
+              '8(a) Business Development Program',
+              'Woman-Owned Small Business (WOSB)',
+              'Service-Disabled Veteran-Owned (SDVOSB)',
+              'HUBZone Certified',
+              'Veteran-Owned Small Business (VOSB)',
+            ].map((cert) => {
+              const checked = certifications.includes(cert)
+              return (
+                <label
+                  key={cert}
+                  className={`flex items-center gap-3 rounded-xl border px-4 py-3 cursor-pointer transition-colors ${
+                    checked
+                      ? 'border-amber-600 bg-amber-950'
+                      : 'border-slate-700 bg-slate-800 hover:border-slate-600'
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={() => setCertifications(prev =>
+                      prev.includes(cert) ? prev.filter(c => c !== cert) : [...prev, cert]
+                    )}
+                    className="h-4 w-4 accent-amber-500"
+                  />
+                  <span className={`text-sm font-medium ${checked ? 'text-amber-200' : 'text-slate-300'}`}>
+                    {cert}
+                  </span>
                 </label>
               )
             })}

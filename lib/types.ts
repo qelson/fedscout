@@ -41,4 +41,5 @@ export interface UserPreferences {
   agencies: string[]
   min_value: number | null
   max_value: number | null
+  certifications?: string[]
 }

@@ -1,5 +1,32 @@
 import { Opportunity, UserPreferences } from '@/lib/types'
 
+const CERT_PATTERNS: { cert: string; patterns: string[] }[] = [
+  { cert: '8(a) Business Development Program', patterns: ['8(a)', '8a '] },
+  { cert: 'Woman-Owned Small Business (WOSB)', patterns: ['wosb', 'woman-owned', 'woman owned'] },
+  { cert: 'Service-Disabled Veteran-Owned (SDVOSB)', patterns: ['sdvosb', 'service-disabled veteran', 'service disabled veteran'] },
+  { cert: 'HUBZone Certified', patterns: ['hubzone', 'hub zone'] },
+  { cert: 'Veteran-Owned Small Business (VOSB)', patterns: ['vosb', 'veteran-owned', 'veteran owned'] },
+]
+
+function getCertMatches(title: string, description: string, userCerts: string[]): string[] {
+  const text = (title + ' ' + description).toLowerCase()
+  return CERT_PATTERNS
+    .filter(({ cert, patterns }) =>
+      userCerts.includes(cert) && patterns.some(p => text.includes(p))
+    )
+    .map(({ cert }) => cert)
+}
+
+export function getSetAsideBadge(title: string, description: string): string | null {
+  const text = (title + ' ' + description).toLowerCase()
+  if (text.includes('8(a)') || text.includes('8a ')) return '8(a)'
+  if (text.includes('wosb') || text.includes('woman-owned') || text.includes('woman owned')) return 'WOSB'
+  if (text.includes('sdvosb') || text.includes('service-disabled veteran')) return 'SDVOSB'
+  if (text.includes('hubzone') || text.includes('hub zone')) return 'HUBZone'
+  if (text.includes('vosb') || text.includes('veteran-owned') || text.includes('veteran owned')) return 'VOSB'
+  return null
+}
+
 export function scoreOpportunity(
   opportunity: Opportunity,
   prefs: UserPreferences
@@ -73,8 +100,12 @@ export function scoreOpportunity(
     score -= 10
   }
 
-  // Small business set-aside bonus — +15
-  if (description.includes('small business')) {
+  // Certification set-aside match — +30 if contract targets user's certification
+  const certMatches = getCertMatches(title, description, prefs.certifications ?? [])
+  if (certMatches.length > 0) {
+    score += 30
+  } else if (description.includes('small business')) {
+    // Generic small business set-aside bonus — +15 (no specific cert needed)
     score += 15
   }
 
@@ -165,7 +196,11 @@ export function getScoreBreakdown(
     reasons.push('No description available — harder to evaluate (−10)')
   }
 
-  if (description.includes('small business')) {
+  const certMatches = getCertMatches(title, description, prefs.certifications ?? [])
+  if (certMatches.length > 0) {
+    const label = certMatches.map(c => c.split(' ')[0]).join(', ')
+    reasons.push(`Set-aside match: ${label} — highly targeted opportunity (+30)`)
+  } else if (description.includes('small business')) {
     reasons.push('Small business set-aside — more winnable (+15)')
   }
 

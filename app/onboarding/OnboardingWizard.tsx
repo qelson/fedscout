@@ -324,6 +324,71 @@ function StepContractSize({
   )
 }
 
+// ─── Step 4: Certifications ───────────────────────────────────────────────────
+
+const CERT_OPTIONS = [
+  '8(a) Business Development Program',
+  'Woman-Owned Small Business (WOSB)',
+  'Service-Disabled Veteran-Owned (SDVOSB)',
+  'HUBZone Certified',
+  'Veteran-Owned Small Business (VOSB)',
+  'None currently',
+]
+
+function StepCertifications({
+  selected,
+  onChange,
+}: {
+  selected: string[]
+  onChange: (v: string[]) => void
+}) {
+  function toggle(cert: string) {
+    if (cert === 'None currently') {
+      onChange(selected.includes(cert) ? [] : ['None currently'])
+      return
+    }
+    const withoutNone = selected.filter(c => c !== 'None currently')
+    onChange(
+      withoutNone.includes(cert)
+        ? withoutNone.filter(c => c !== cert)
+        : [...withoutNone, cert]
+    )
+  }
+
+  return (
+    <div className="space-y-5">
+      <div>
+        <h2 className="text-xl font-semibold text-gray-900">Do you hold any small business certifications?</h2>
+        <p className="mt-1 text-sm text-gray-500">We&apos;ll prioritize contracts that require your certifications.</p>
+      </div>
+      <div className="space-y-2">
+        {CERT_OPTIONS.map(cert => {
+          const active = selected.includes(cert)
+          return (
+            <button
+              key={cert}
+              type="button"
+              onClick={() => toggle(cert)}
+              className={`w-full flex items-center justify-between rounded-lg border px-4 py-3 text-sm text-left transition-colors ${
+                active
+                  ? 'border-blue-500 bg-blue-50 text-blue-700 font-medium'
+                  : 'border-gray-200 text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              <span>{cert}</span>
+              {active && (
+                <svg className="h-4 w-4 text-blue-600 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+              )}
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 // ─── Success Screen ───────────────────────────────────────────────────────────
 
 function SuccessScreen({ onClick }: { onClick: () => void }) {
@@ -354,7 +419,7 @@ function SuccessScreen({ onClick }: { onClick: () => void }) {
 
 export default function OnboardingWizard() {
   const router = useRouter()
-  const TOTAL_STEPS = 3
+  const TOTAL_STEPS = 4
 
   const [step, setStep] = useState(1)
   const [done, setDone] = useState(false)
@@ -369,6 +434,8 @@ export default function OnboardingWizard() {
   // Step 3
   const [anySize, setAnySize] = useState(true)
   const [sizeIndex, setSizeIndex] = useState<number | null>(null)
+  // Step 4
+  const [certifications, setCertifications] = useState<string[]>([])
 
   function handleNext() {
     if (step < TOTAL_STEPS) setStep(step + 1)
@@ -390,6 +457,7 @@ export default function OnboardingWizard() {
       agencies,
       min_value: selectedSize?.min ?? null,
       max_value: selectedSize?.max ?? null,
+      certifications: certifications.filter(c => c !== 'None currently'),
     })
 
     if (result?.error) {
@@ -412,12 +480,10 @@ export default function OnboardingWizard() {
   }
 
   const canAdvanceStep1 = naicsCodes.length > 0
-  const canAdvanceStep2 = true // keywords and agencies are optional
   const isLastStep = step === TOTAL_STEPS
 
   function canAdvance() {
     if (step === 1) return canAdvanceStep1
-    if (step === 2) return canAdvanceStep2
     return true
   }
 
@@ -451,6 +517,12 @@ export default function OnboardingWizard() {
               selectedIndex={sizeIndex}
               onAnySizeChange={setAnySize}
               onSelectIndex={setSizeIndex}
+            />
+          )}
+          {step === 4 && (
+            <StepCertifications
+              selected={certifications}
+              onChange={setCertifications}
             />
           )}
         </div>

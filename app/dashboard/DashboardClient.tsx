@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { OpportunityWithStatus, OppStatus, UserPreferences } from '@/lib/types'
 import { updateOpportunityStatus, updateOpportunityNotes, updateOpportunityDates } from './actions'
 import { logout } from '@/app/actions/auth'
-import { scoreOpportunity, getScoreColor, getScoreBg, getScoreLabel, getScoreBreakdown } from '@/lib/scoring'
+import { scoreOpportunity, getScoreColor, getScoreBg, getScoreLabel, getScoreBreakdown, getSetAsideBadge } from '@/lib/scoring'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -107,6 +107,7 @@ function OpportunityCard({
   const dl = deadlineInfo(opp.response_deadline)
   const value = formatValue(opp.estimated_value_min, opp.estimated_value_max)
   const agencyShort = opp.agency ? getAgencyShortName(opp.agency) : null
+  const setAsideBadge = getSetAsideBadge(opp.title, opp.description ?? '')
 
   return (
     <div
@@ -174,13 +175,18 @@ function OpportunityCard({
       </div>
 
       {/* Meta row */}
-      <div className="flex items-center gap-1.5 mb-3">
+      <div className="flex items-center gap-1.5 mb-3 flex-wrap">
         {agencyShort && (
           <span
             className="rounded px-1.5 py-0.5 text-xs font-bold"
             style={{ backgroundColor: '#172554', color: '#60a5fa' }}
           >
             {agencyShort}
+          </span>
+        )}
+        {setAsideBadge && (
+          <span className="bg-amber-950 border border-amber-700 text-amber-400 text-xs font-bold px-2 py-0.5 rounded-full">
+            {setAsideBadge}
           </span>
         )}
         {value && (

@@ -8,6 +8,7 @@ interface PreferencesPayload {
   agencies: string[]
   min_value: number | null
   max_value: number | null
+  certifications?: string[]
 }
 
 export async function savePreferences(payload: PreferencesPayload) {
@@ -26,6 +27,7 @@ export async function savePreferences(payload: PreferencesPayload) {
         agencies: payload.agencies,
         min_value: payload.min_value,
         max_value: payload.max_value,
+        certifications: payload.certifications ?? [],
         updated_at: new Date().toISOString(),
       },
       { onConflict: 'user_id' }
