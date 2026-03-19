@@ -20,12 +20,20 @@ export default function PricingClient() {
     setLoading(true)
     setError('')
     try {
-      const res = await fetch('/api/stripe/create-checkout-session', { method: 'POST' })
+      const res = await fetch('/api/stripe/create-checkout-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+      })
+
+      if (res.status === 401) {
+        window.location.href = '/signup'
+        return
+      }
+
       const data = await res.json()
       if (data.url) {
         window.location.href = data.url
-      } else if (res.status === 401) {
-        window.location.href = '/signup'
       } else {
         setError(data.error ?? 'Something went wrong. Please try again.')
       }
