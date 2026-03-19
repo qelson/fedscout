@@ -8,19 +8,21 @@ import Link from 'next/link'
 const Q1 = {
   id: 'business_type',
   question: 'What best describes your business?',
+  multi: false,
   options: [
-    { value: 'it_tech',      label: 'IT & Technology Services' },
+    { value: 'it_tech',       label: 'IT & Technology Services' },
     { value: 'cybersecurity', label: 'Cybersecurity' },
-    { value: 'consulting',   label: 'Management Consulting' },
-    { value: 'construction', label: 'Construction & Facilities' },
-    { value: 'engineering',  label: 'Engineering & Technical' },
-    { value: 'other',        label: 'Other' },
+    { value: 'consulting',    label: 'Management Consulting' },
+    { value: 'construction',  label: 'Construction & Facilities' },
+    { value: 'engineering',   label: 'Engineering & Technical' },
+    { value: 'other',         label: 'Other' },
   ],
 }
 
 const Q2 = {
   id: 'current_method',
   question: 'How do you currently find federal contracts?',
+  multi: false,
   options: [
     { value: 'manual',    label: 'I check SAM.gov manually every day' },
     { value: 'paid_tool', label: 'I use a paid tool like GovWin' },
@@ -32,6 +34,7 @@ const Q2 = {
 const Q3 = {
   id: 'biggest_challenge',
   question: "What's your biggest challenge with SAM.gov?",
+  multi: false,
   options: [
     { value: 'time',      label: 'Too time-consuming to check daily' },
     { value: 'deadlines', label: 'Missing deadlines' },
@@ -50,7 +53,6 @@ function getPersonalizedLines(answers: Record<string, string>): string[] {
   const cm = answers['current_method']
   const ch = answers['biggest_challenge']
 
-  // Line 1: NAICS + agency recommendation based on business type
   if (bt === 'it_tech') {
     lines.push("Based on your IT services background, we'll prioritize NAICS 541511 and 541512 contracts from DoD, DHS, and GSA.")
   } else if (bt === 'cybersecurity') {
@@ -65,7 +67,6 @@ function getPersonalizedLines(answers: Record<string, string>): string[] {
     lines.push("We'll tailor your contract feed once you set your NAICS codes — takes about 60 seconds during onboarding.")
   }
 
-  // Line 2: based on current method
   if (cm === 'manual') {
     lines.push("Since you're already checking SAM.gov manually, FedScout will save you that time and surface only the contracts that fit your profile.")
   } else if (cm === 'paid_tool') {
@@ -76,7 +77,6 @@ function getPersonalizedLines(answers: Record<string, string>): string[] {
     lines.push("We'll walk you through setup in 2 minutes and start surfacing real opportunities right away — no SAM.gov expertise needed.")
   }
 
-  // Line 3: based on challenge
   if (ch === 'time') {
     lines.push("Your daily digest will replace manual SAM.gov searches entirely — one email, every morning, with only what matters.")
   } else if (ch === 'deadlines') {
@@ -90,151 +90,151 @@ function getPersonalizedLines(answers: Record<string, string>): string[] {
   return lines
 }
 
-// ─── Components ───────────────────────────────────────────────────────────────
-
-function ProgressBar({ step, total }: { step: number; total: number }) {
-  return (
-    <div className="w-full h-0.5 bg-gray-100 rounded-full mb-10">
-      <div
-        className="h-full bg-gray-900 rounded-full transition-all duration-500"
-        style={{ width: `${(step / total) * 100}%` }}
-      />
-    </div>
-  )
-}
-
-function QuestionStep({
-  q,
-  stepNum,
-  totalSteps,
-  onSelect,
-}: {
-  q: typeof Q1
-  stepNum: number
-  totalSteps: number
-  onSelect: (value: string) => void
-}) {
-  return (
-    <div className="w-full max-w-lg mx-auto">
-      <p className="text-xs font-semibold uppercase tracking-widest text-gray-400 mb-4">
-        Question {stepNum} of {totalSteps}
-      </p>
-      <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-8 leading-snug">
-        {q.question}
-      </h2>
-      <div className="grid grid-cols-1 gap-3">
-        {q.options.map(({ value, label }) => (
-          <button
-            key={value}
-            type="button"
-            onClick={() => onSelect(value)}
-            className="w-full text-left rounded-xl border border-gray-200 px-5 py-4 text-sm font-medium text-gray-700 hover:border-gray-900 hover:text-gray-900 hover:bg-gray-50 transition-all group"
-          >
-            <span className="flex items-center justify-between">
-              {label}
-              <svg className="h-4 w-4 text-gray-300 group-hover:text-gray-600 transition-colors shrink-0 ml-3" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-              </svg>
-            </span>
-          </button>
-        ))}
-      </div>
-    </div>
-  )
-}
+// ─── Results Screen ────────────────────────────────────────────────────────────
 
 function ResultsScreen({ answers }: { answers: Record<string, string> }) {
   const lines = getPersonalizedLines(answers)
 
   return (
-    <div className="w-full max-w-lg mx-auto">
-      <div className="inline-flex items-center gap-2 rounded-full bg-green-50 px-3 py-1 mb-6">
-        <svg className="h-3.5 w-3.5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+    <>
+      {/* Green checkmark */}
+      <div className="w-16 h-16 bg-green-950 border-2 border-green-600 rounded-full flex items-center justify-center mx-auto mb-6">
+        <svg className="w-7 h-7 text-green-400" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
         </svg>
-        <span className="text-xs font-semibold text-green-700">Profile ready</span>
       </div>
 
-      <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-6 leading-snug">
+      <h2 className="text-slate-100 text-2xl font-bold text-center mb-3">
         Your FedScout profile is ready
       </h2>
+      <p className="text-slate-400 text-sm text-center mb-8 leading-relaxed">
+        {lines[0]}
+      </p>
 
-      <div className="space-y-3 mb-8">
-        {lines.map((line, i) => (
-          <div key={i} className="flex items-start gap-3 rounded-xl bg-gray-50 px-4 py-3.5">
-            <svg className="h-4 w-4 mt-0.5 shrink-0 text-blue-500" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <p className="text-sm text-gray-700 leading-relaxed">{line}</p>
-          </div>
-        ))}
-      </div>
+      {lines.slice(1).map((line, i) => (
+        <div key={i} className="bg-slate-800/50 border border-slate-700 rounded-xl px-4 py-3 mb-3">
+          <p className="text-slate-300 text-sm leading-relaxed">{line}</p>
+        </div>
+      ))}
 
       <Link
         href="/signup"
-        className="block w-full rounded-xl bg-gray-900 px-6 py-4 text-center text-sm font-semibold text-white hover:bg-gray-700 transition-colors mb-3"
+        className="block w-full bg-red-700 hover:bg-red-600 text-white font-bold py-4 rounded-xl text-base text-center transition-colors mt-6"
       >
-        Create your account to see your matches →
+        Create your account to see your matches
       </Link>
-      <p className="text-center text-xs text-gray-400">Takes 2 minutes. 14-day free trial.</p>
-    </div>
+      <p className="text-center text-xs text-slate-600 mt-3">Takes 2 minutes. 14-day free trial.</p>
+    </>
   )
 }
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function QuizPage() {
-  const [step, setStep] = useState(0) // 0-2 = questions, 3 = results
+  const [step, setStep] = useState(0)
   const [answers, setAnswers] = useState<Record<string, string>>({})
+  const [selected, setSelected] = useState<string | null>(null)
 
-  // Persist answers to localStorage
+  const totalSteps = QUESTIONS.length
+  const isResults = step >= totalSteps
+  const currentQ = QUESTIONS[step]
+
   useEffect(() => {
     if (Object.keys(answers).length > 0) {
       localStorage.setItem('fedscout_quiz', JSON.stringify(answers))
     }
   }, [answers])
 
-  function handleSelect(value: string) {
-    const q = QUESTIONS[step]
-    const next = { ...answers, [q.id]: value }
+  function handleContinue() {
+    if (!selected || !currentQ) return
+    const next = { ...answers, [currentQ.id]: selected }
     setAnswers(next)
+    setSelected(null)
     setStep((s) => s + 1)
   }
 
+  function handleBack() {
+    if (step === 0) return
+    setSelected(null)
+    setStep((s) => s - 1)
+  }
+
   return (
-    <div className="min-h-screen flex flex-col bg-slate-950">
-      {/* Nav */}
-      <header className="border-b border-slate-800 shrink-0">
-        <div className="max-w-2xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
-          <Link href="/" className="text-4xl font-extrabold tracking-tight">
+    <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center px-4 py-12">
+      <div className="w-full max-w-lg bg-slate-900 border border-slate-800 rounded-2xl p-8">
+
+        {/* Logo */}
+        <div className="text-center mb-6">
+          <Link href="/" className="text-3xl font-extrabold tracking-tight">
             <span className="text-white">Fed</span><span className="text-red-500">Scout</span>
           </Link>
-          <Link href="/login" className="text-sm text-gray-500 hover:text-gray-900 transition-colors">
-            Sign in
-          </Link>
         </div>
-      </header>
 
-      {/* Content */}
-      <div className="flex-1 flex flex-col justify-center px-4 sm:px-6 py-12">
-        <div className="max-w-lg mx-auto w-full">
-          {step < QUESTIONS.length ? (
-            <>
-              <ProgressBar step={step + 1} total={QUESTIONS.length} />
-              <QuestionStep
-                q={QUESTIONS[step]}
-                stepNum={step + 1}
-                totalSteps={QUESTIONS.length}
-                onSelect={handleSelect}
-              />
-            </>
-          ) : (
-            <>
-              <ProgressBar step={QUESTIONS.length} total={QUESTIONS.length} />
-              <ResultsScreen answers={answers} />
-            </>
-          )}
+        {/* Progress bar */}
+        <div className="h-1.5 bg-slate-800 rounded-full mt-6 mb-2">
+          <div
+            className="h-full bg-red-600 rounded-full transition-all duration-300"
+            style={{ width: `${((isResults ? totalSteps : step) / totalSteps) * 100}%` }}
+          />
         </div>
+        <p className="text-slate-600 text-xs text-right mb-6">
+          {isResults ? `${totalSteps} of ${totalSteps}` : `Step ${step + 1} of ${totalSteps}`}
+        </p>
+
+        {isResults ? (
+          <ResultsScreen answers={answers} />
+        ) : (
+          <>
+            {/* Question */}
+            <h2 className="text-slate-100 text-xl font-bold leading-snug mb-6">
+              {currentQ.question}
+            </h2>
+
+            {/* Options */}
+            <div className="flex flex-col gap-3">
+              {currentQ.options.map(({ value, label }) => {
+                const isSelected = selected === value
+                return (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setSelected(value)}
+                    className={`w-full text-left rounded-xl px-5 py-4 text-sm transition-all cursor-pointer border ${
+                      isSelected
+                        ? 'border-red-600 bg-red-950/50 text-white'
+                        : 'bg-slate-800/50 border-slate-700 text-slate-300 hover:border-slate-500 hover:bg-slate-800'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                )
+              })}
+            </div>
+
+            {/* Navigation */}
+            <div className="flex justify-between items-center mt-8">
+              {step > 0 ? (
+                <button
+                  type="button"
+                  onClick={handleBack}
+                  className="text-slate-500 text-sm hover:text-slate-300 transition-colors"
+                >
+                  ← Back
+                </button>
+              ) : (
+                <span />
+              )}
+              <button
+                type="button"
+                onClick={handleContinue}
+                disabled={!selected}
+                className="bg-red-700 hover:bg-red-600 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold px-8 py-3 rounded-xl text-sm transition-colors"
+              >
+                Continue
+              </button>
+            </div>
+          </>
+        )}
       </div>
     </div>
   )
