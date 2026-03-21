@@ -620,7 +620,7 @@ export default function DashboardClient({
       </header>
 
       {/* ── Body: 2-column grid ── */}
-      <div className="p-6 gap-4" style={{ display: 'grid', gridTemplateColumns: '1fr 220px' }}>
+      <div className="p-6" style={{ display: 'grid', gridTemplateColumns: '1fr 260px', gap: '16px', alignItems: 'start' }}>
 
         {/* ── Left column ── */}
         <div>
@@ -634,7 +634,7 @@ export default function DashboardClient({
           </p>
 
           {/* Stats row */}
-          <div className="grid grid-cols-4 gap-2 mb-4">
+          <div className="grid grid-cols-4 gap-3 mb-4">
             <div className="bg-slate-900 border border-slate-800 rounded-xl p-3">
               <p className="text-blue-400 text-2xl font-extrabold">{newSinceYesterday}</p>
               <p className="text-slate-700 text-xs uppercase tracking-wide mt-1">New since yesterday</p>
@@ -703,9 +703,9 @@ export default function DashboardClient({
           <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
 
             {/* Toolbar */}
-            <div className="px-4 py-3 border-b border-slate-800 flex items-center gap-2">
+            <div className="px-4 py-3 border-b border-slate-800 flex items-center gap-2 min-w-0">
               {/* Search */}
-              <div className="flex-1 bg-slate-950 border border-slate-800 rounded-lg px-3 h-8 flex items-center gap-2">
+              <div className="min-w-0 w-48 shrink bg-slate-950 border border-slate-800 rounded-lg px-3 h-8 flex items-center gap-2">
                 <svg
                   width="12" height="12" viewBox="0 0 24 24" fill="none"
                   stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
