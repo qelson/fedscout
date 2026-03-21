@@ -3,10 +3,9 @@
 import { useState, useEffect, useTransition } from 'react'
 import Link from 'next/link'
 import { OpportunityWithStatus, OppStatus, UserPreferences } from '@/lib/types'
-import { updateOpportunityStatus, updateOpportunityNotes, updateOpportunityDates } from './actions'
-import BidEvaluationPanel from './BidEvaluationPanel'
-import { logout } from '@/app/actions/auth'
-import { scoreOpportunity, getScoreColor, getScoreBg, getScoreLabel, getScoreBreakdown, getSetAsideBadge } from '@/lib/scoring'
+import { updateOpportunityStatus, updateOpportunityNotes } from './actions'
+import { scoreOpportunity, getScoreBreakdown, getSetAsideBadge } from '@/lib/scoring'
+import { createClient } from '@/lib/supabase/client'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -18,34 +17,107 @@ function formatValue(min: number | null, max: number | null): string {
   return `$${val.toLocaleString()}`
 }
 
-function getAgencyShortName(agency: string): string {
-  const up = agency.toUpperCase()
-  if (up.includes('DEFENSE'))          return 'DoD'
-  if (up.includes('HOMELAND'))         return 'DHS'
-  if (up.includes('VETERANS'))         return 'VA'
-  if (up.includes('COMMERCE'))         return 'Commerce'
-  if (up.includes('HEALTH'))           return 'HHS'
-  if (up.includes('NASA'))             return 'NASA'
-  if (up.includes('GENERAL SERVICES')) return 'GSA'
-  if (up.includes('ENERGY'))           return 'DOE'
-  const first = agency.split(' ')[0]
-  return first.length > 12 ? first.slice(0, 12) + '…' : first
-}
-
-function deadlineInfo(deadline: string | null): { label: string; color: string; bold: boolean } {
-  if (!deadline) return { label: 'No deadline', color: '#475569', bold: false }
+function deadlineInfo(deadline: string | null): {
+  label: string
+  color: string
+  bold: boolean
+  daysLeft: number | null
+} {
+  if (!deadline) return { label: 'No deadline', color: '#475569', bold: false, daysLeft: null }
   const today = new Date()
   today.setHours(0, 0, 0, 0)
   const d = new Date(deadline)
   const days = Math.ceil((d.getTime() - today.getTime()) / 86_400_000)
   const label = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-  if (days < 0)  return { label: `${label} (past)`, color: '#334155', bold: false }
-  if (days < 7)  return { label: `${label} · ${days}d left`, color: '#fbbf24', bold: true }
-  if (days < 14) return { label: `${label} · ${days}d left`, color: '#d97706', bold: false }
-  return { label, color: '#475569', bold: false }
+  if (days < 0)  return { label: `${label} (past)`,          color: '#334155', bold: false, daysLeft: days }
+  if (days < 7)  return { label: `${label} · ${days}d left`, color: '#fbbf24', bold: true,  daysLeft: days }
+  if (days < 14) return { label: `${label} · ${days}d left`, color: '#d97706', bold: false, daysLeft: days }
+  return { label, color: '#475569', bold: false, daysLeft: days }
 }
 
-// ─── Opportunity Card ─────────────────────────────────────────────────────────
+function getAgencyShortName(agency: string): string {
+  const upper = agency.toUpperCase()
+  if (upper.includes('DEFENSE') || upper.includes('DOD'))                         return 'DoD'
+  if (upper.includes('HOMELAND') || upper.includes('DHS'))                        return 'DHS'
+  if (upper.includes('GENERAL SERVICES') || upper.includes('GSA'))                return 'GSA'
+  if (upper.includes('VETERANS') || upper.includes(' VA ') || upper.endsWith(' VA')) return 'VA'
+  if (upper.includes('HEALTH') || upper.includes('HHS'))                          return 'HHS'
+  if (upper.includes('ENERGY') || upper.includes(' DOE'))                         return 'DOE'
+  if (upper.includes('TRANSPORTATION') || upper.includes(' DOT'))                 return 'DOT'
+  if (upper.includes('JUSTICE') || upper.includes(' DOJ'))                        return 'DOJ'
+  if (upper.includes('STATE DEPARTMENT'))                                         return 'DOS'
+  if (upper.includes('TREASURY'))                                                 return 'TRS'
+  if (upper.includes('INTERIOR'))                                                 return 'DOI'
+  if (upper.includes('AGRICULTURE'))                                              return 'USDA'
+  if (upper.includes('COMMERCE'))                                                 return 'DOC'
+  if (upper.includes('LABOR'))                                                    return 'DOL'
+  if (upper.includes('EDUCATION'))                                                return 'EDU'
+  if (upper.includes('NASA'))                                                     return 'NASA'
+  const words = agency.split(/\s+/).filter(w => !['OF','THE','AND','FOR','U.S.','US'].includes(w.toUpperCase()))
+  if (words.length >= 2) return (words[0][0] + words[1][0] + (words[2]?.[0] ?? '')).toUpperCase().slice(0, 4)
+  return agency.slice(0, 3).toUpperCase()
+}
+
+function getAgencyStyle(agency: string): { bg: string; text: string } {
+  const upper = agency.toUpperCase()
+  if (upper.includes('DEFENSE') || upper.includes('DOD'))                           return { bg: 'bg-blue-950',   text: 'text-blue-400'   }
+  if (upper.includes('HOMELAND') || upper.includes('DHS'))                          return { bg: 'bg-indigo-950', text: 'text-indigo-400' }
+  if (upper.includes('GENERAL SERVICES') || upper.includes('GSA'))                  return { bg: 'bg-slate-800',  text: 'text-slate-500'  }
+  if (upper.includes('VETERANS') || upper.includes(' VA ') || upper.endsWith(' VA')) return { bg: 'bg-stone-900',  text: 'text-stone-400'  }
+  return { bg: 'bg-slate-800', text: 'text-slate-500' }
+}
+
+function isRecompete(title: string, description: string): boolean {
+  const text = (title + ' ' + description).toLowerCase()
+  return text.includes('recompete') || text.includes('re-compete') || text.includes('re-competition')
+}
+
+// ─── Score badge ───────────────────────────────────────────────────────────────
+
+function ScoreBadge({
+  score,
+  userPrefs,
+  opp,
+}: {
+  score: number
+  userPrefs: UserPreferences | null
+  opp: OpportunityWithStatus
+}) {
+  const [showTooltip, setShowTooltip] = useState(false)
+
+  let cls = 'relative rounded-full px-2 py-0.5 text-xs font-extrabold border cursor-help '
+  if (score >= 80) cls += 'bg-green-950 border-green-900 text-green-400'
+  else if (score >= 60) cls += 'bg-amber-950 border-amber-900 text-amber-400'
+  else cls += 'bg-slate-800 border-slate-700 text-slate-500'
+
+  return (
+    <div className="relative flex-shrink-0">
+      <span
+        className={cls}
+        onMouseEnter={() => setShowTooltip(true)}
+        onMouseLeave={() => setShowTooltip(false)}
+      >
+        {score}%
+      </span>
+      {showTooltip && userPrefs && (
+        <div className="absolute right-0 top-7 z-50 w-64 bg-slate-800 border border-slate-700 rounded-xl p-3 shadow-xl">
+          <p className="text-slate-300 text-xs font-bold mb-2">Why this score?</p>
+          <ul className="space-y-1">
+            {getScoreBreakdown(opp, userPrefs).map((reason, i) => (
+              <li key={i} className="text-slate-400 text-xs flex items-start gap-1.5">
+                <span className="text-green-400 mt-0.5">·</span>
+                {reason}
+              </li>
+            ))}
+          </ul>
+          <p className="text-slate-600 text-xs mt-2 border-t border-slate-700 pt-2">Score: {score}/100</p>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── Opportunity Card ──────────────────────────────────────────────────────────
 
 const STATUS_BUTTONS: { key: OppStatus; label: string }[] = [
   { key: 'pursuing',   label: 'Pursuing'   },
@@ -70,17 +142,7 @@ function OpportunityCard({
   onToggleNotes,
   onNoteChange,
   onNoteBlur,
-  datesOpen,
-  onToggleDates,
-  bidDueDate,
-  decisionDate,
-  onBidDueDateChange,
-  onDecisionDateChange,
-  onDatesBlur,
-  evalOpen,
-  onToggleEval,
-  evaluation,
-  onEvalSave,
+  isNew,
 }: {
   opp: OpportunityWithStatus
   status: OppStatus | null
@@ -98,156 +160,104 @@ function OpportunityCard({
   onToggleNotes: () => void
   onNoteChange: (text: string) => void
   onNoteBlur: () => void
-  datesOpen: boolean
-  onToggleDates: () => void
-  bidDueDate: string
-  decisionDate: string
-  onBidDueDateChange: (date: string) => void
-  onDecisionDateChange: (date: string) => void
-  onDatesBlur: () => void
-  evalOpen: boolean
-  onToggleEval: () => void
-  evaluation: Record<string, any> | undefined
-  onEvalSave: (ev: Record<string, any>) => void
+  isNew: boolean
 }) {
-  const [showTooltip, setShowTooltip] = useState(false)
   const [mounted, setMounted] = useState(false)
   useEffect(() => setMounted(true), [])
+
   const dl = deadlineInfo(opp.response_deadline)
   const value = formatValue(opp.estimated_value_min, opp.estimated_value_max)
   const agencyShort = opp.agency ? getAgencyShortName(opp.agency) : null
+  const agencyStyle = opp.agency ? getAgencyStyle(opp.agency) : { bg: 'bg-slate-800', text: 'text-slate-500' }
   const setAsideBadge = getSetAsideBadge(opp.title, opp.description ?? '')
+  const recompete = isRecompete(opp.title, opp.description ?? '')
+  const isUnderDeadline14 = dl.daysLeft !== null && dl.daysLeft >= 0 && dl.daysLeft < 14
+
+  const briefPoints = brief
+    ? brief.split('\n').filter(l => l.trim()).map(l => l.replace(/^[\d.\-*•]\s*/, '').trim()).filter(Boolean).slice(0, 4)
+    : []
 
   return (
     <div
-      className="px-5 py-4 border-b transition-colors"
-      style={{ borderColor: 'rgba(30,41,59,0.5)' }}
-      suppressHydrationWarning
-      onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'rgba(30,41,59,0.5)')}
-      onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'transparent')}
+      className="px-4 py-3.5 border-b border-slate-950"
+      style={{ backgroundColor: showTopMatch ? 'rgba(15,23,42,0.6)' : 'transparent' }}
     >
-      {/* Title row */}
-      <div className="flex items-start justify-between gap-3 mb-2">
+      {/* Row 1: red dot · title · score */}
+      <div className="flex items-start gap-2">
+        {isNew && (
+          <span className="w-1.5 h-1.5 bg-red-600 rounded-full mt-1.5 flex-shrink-0" />
+        )}
         <a
           href={opp.sam_url}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-sm font-semibold leading-snug flex-1 transition-colors"
-          style={{ color: '#cbd5e1' }}
-          onMouseEnter={e => (e.currentTarget.style.color = '#93c5fd')}
-          onMouseLeave={e => (e.currentTarget.style.color = '#cbd5e1')}
+          className="text-slate-200 text-xs font-semibold leading-snug flex-1 hover:text-blue-300 transition-colors"
         >
           {opp.title}
         </a>
-        <div className="flex items-center gap-1.5 shrink-0">
-          {showTopMatch && (
-            <span className="px-2 py-0.5 rounded-full border bg-green-950 border-green-800 text-green-400 text-xs font-bold">
-              Top match
-            </span>
-          )}
-          {showScore && (
-            <div className="relative">
-              <div
-                className={`flex items-center gap-1 px-2 py-0.5 rounded-full border text-xs font-bold cursor-help ${getScoreBg(score)}`}
-                onMouseEnter={() => setShowTooltip(true)}
-                onMouseLeave={() => setShowTooltip(false)}
-              >
-                <span className={getScoreColor(score)}>{score}</span>
-                <span className={`text-xs ${getScoreColor(score)}`}>pts</span>
-              </div>
-
-              {showTooltip && userPrefs && (
-                <div className="absolute right-0 top-7 z-50 w-64 bg-slate-800 border border-slate-700 rounded-xl p-3 shadow-xl">
-                  <p className="text-slate-300 text-xs font-bold mb-2">Why this score?</p>
-                  <ul className="space-y-1">
-                    {getScoreBreakdown(opp, userPrefs).map((reason, i) => (
-                      <li key={i} className="text-slate-400 text-xs flex items-start gap-1.5">
-                        <span className="text-green-400 mt-0.5">·</span>
-                        {reason}
-                      </li>
-                    ))}
-                  </ul>
-                  <p className="text-slate-600 text-xs mt-2 border-t border-slate-700 pt-2">
-                    Score: {score}/100
-                  </p>
-                </div>
-              )}
-            </div>
-          )}
-          <span
-            className="rounded px-1.5 py-0.5 text-xs font-mono"
-            style={{ backgroundColor: '#1e293b', color: '#64748b' }}
-          >
-            {opp.naics_code}
-          </span>
-        </div>
+        {showScore && <ScoreBadge score={score} userPrefs={userPrefs} opp={opp} />}
       </div>
 
-      {/* Meta row */}
-      <div className="flex items-center gap-1.5 mb-3 flex-wrap">
+      {/* Row 2: agency · NAICS · set-aside · recompete · value */}
+      <div className="flex items-center gap-1.5 flex-wrap mt-1 mb-2.5">
         {agencyShort && (
-          <span
-            className="rounded px-1.5 py-0.5 text-xs font-bold"
-            style={{ backgroundColor: '#172554', color: '#60a5fa' }}
-          >
+          <span className={`text-xs font-bold px-1.5 py-0.5 rounded ${agencyStyle.bg} ${agencyStyle.text}`}>
             {agencyShort}
           </span>
         )}
+        {opp.naics_code && (
+          <span className="font-mono bg-slate-950 text-slate-700 text-xs px-1.5 rounded">
+            {opp.naics_code}
+          </span>
+        )}
         {setAsideBadge && (
-          <span className="bg-amber-950 border border-amber-700 text-amber-400 text-xs font-bold px-2 py-0.5 rounded-full">
+          <span className="bg-amber-950 border border-amber-900 text-amber-500 text-xs font-bold px-1.5 rounded">
             {setAsideBadge}
           </span>
         )}
-        {value && (
-          <span className="text-sm" style={{ color: '#475569' }}>
-            · Est. {value}
+        {recompete && (
+          <span className="bg-blue-950 border border-blue-900 text-blue-400 text-xs font-bold px-1.5 rounded">
+            ♻ Recompete
           </span>
+        )}
+        {value && (
+          <span className="text-slate-700 text-xs ml-auto">{value}</span>
         )}
       </div>
 
-      {/* Bottom row: status buttons + deadline + brief */}
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex gap-1.5">
+      {/* Row 3: status buttons · deadline · value · brief */}
+      <div className="flex items-center justify-between">
+        <div className="flex gap-1">
           {STATUS_BUTTONS.map(({ key, label }) => {
             const active = status === key
-            let style: React.CSSProperties
+            let cls = 'text-xs px-2.5 py-1 rounded-md border transition-colors '
             if (active) {
-              if (key === 'pursuing')       style = { backgroundColor: '#172554', color: '#93c5fd', borderColor: '#1e3a8a' }
-              else if (key === 'interested') style = { backgroundColor: '#052e16', color: '#4ade80', borderColor: '#14532d' }
-              else                          style = { backgroundColor: '#1e293b', color: '#94a3b8', borderColor: '#334155' }
+              if (key === 'pursuing')        cls += 'bg-blue-950 text-blue-300 border-blue-900'
+              else if (key === 'interested') cls += 'bg-green-950 text-green-400 border-green-900'
+              else                           cls += 'bg-slate-800 text-slate-500 border-slate-700'
             } else {
-              style = { backgroundColor: 'transparent', color: '#475569', borderColor: '#334155' }
+              cls += 'border-slate-800 text-slate-700 hover:border-slate-600'
             }
             return (
-              <button
-                key={key}
-                type="button"
-                onClick={() => onStatusChange(opp.id, key)}
-                className="rounded border px-3 py-1.5 text-xs transition-colors"
-                style={style}
-                onMouseEnter={e => { if (!active) e.currentTarget.style.borderColor = '#475569' }}
-                onMouseLeave={e => { if (!active) e.currentTarget.style.borderColor = '#334155' }}
-              >
+              <button key={key} type="button" onClick={() => onStatusChange(opp.id, key)} className={cls}>
                 {label}
               </button>
             )
           })}
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <span
-            className="text-xs"
-            style={{ color: dl.color, fontWeight: dl.bold ? 600 : 400 }}
-          >
+          <span className={isUnderDeadline14 ? 'text-amber-400 font-semibold text-xs' : 'text-slate-700 text-xs'}>
             {dl.label}
           </span>
           {value && (
-            <span className="text-xs font-extrabold" style={{ color: '#f1f5f9' }}>{value}</span>
+            <span className="text-slate-100 font-extrabold text-xs">{value}</span>
           )}
+          {/* Notes toggle (hidden but preserved) */}
           <button
             type="button"
             onClick={onToggleNotes}
-            className="relative text-xs px-2 py-1.5 rounded-lg border border-slate-700 text-slate-500 hover:text-slate-300 hover:border-slate-600 transition-colors"
-            title="Add notes"
+            className="relative text-xs px-2 py-1 rounded-md border border-slate-800 text-slate-700 hover:border-slate-600 hover:text-slate-500 transition-colors"
+            title="Notes"
           >
             ✎
             {noteText && (
@@ -256,31 +266,14 @@ function OpportunityCard({
           </button>
           <button
             type="button"
-            onClick={onToggleDates}
-            className="text-xs px-2 py-1.5 rounded-lg border border-slate-700 text-slate-500 hover:text-slate-300 hover:border-slate-600 transition-colors"
-            title="Set dates"
-          >
-            📅
-          </button>
-          <button
-            type="button"
-            onClick={onToggleEval}
-            className="text-xs px-3 py-1.5 rounded-lg border border-slate-700 text-slate-400 hover:border-purple-600 hover:text-purple-400 transition-colors"
-          >
-            {evalOpen ? '▲ Close' : '⊕ Evaluate'}
-          </button>
-          <button
-            type="button"
             onClick={onGetBrief}
-            className="ml-auto flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg border border-slate-700 text-slate-400 hover:border-blue-600 hover:text-blue-400 transition-colors"
+            className={`text-xs font-bold px-2.5 py-1 rounded-md border transition-colors ${
+              isExpanded
+                ? 'bg-blue-900 text-blue-200 border-blue-800'
+                : 'bg-blue-950 border-blue-900 text-blue-400 hover:bg-blue-900'
+            }`}
           >
-            {briefLoading ? (
-              <span className="animate-pulse">Analyzing...</span>
-            ) : isExpanded ? (
-              '▲ Hide brief'
-            ) : (
-              '✦ Get brief'
-            )}
+            {briefLoading ? <span className="animate-pulse">…</span> : isExpanded ? '▲ Brief' : '✦ Brief'}
           </button>
         </div>
       </div>
@@ -300,68 +293,29 @@ function OpportunityCard({
         </div>
       )}
 
-      {/* Dates panel */}
-      {mounted && datesOpen && (
-        <div className="mt-2 pt-2 border-t border-slate-800">
-          <div className="flex gap-3">
-            <div className="flex-1">
-              <p className="text-slate-500 text-xs mb-1">Bid due date</p>
-              <input
-                type="date"
-                value={bidDueDate}
-                onChange={e => onBidDueDateChange(e.target.value)}
-                onBlur={onDatesBlur}
-                className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-300 focus:border-red-600 focus:outline-none"
-              />
-            </div>
-            <div className="flex-1">
-              <p className="text-slate-500 text-xs mb-1">Decision date</p>
-              <input
-                type="date"
-                value={decisionDate}
-                onChange={e => onDecisionDateChange(e.target.value)}
-                onBlur={onDatesBlur}
-                className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-300 focus:border-red-600 focus:outline-none"
-              />
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Evaluation panel */}
-      {mounted && evalOpen && (
-        <BidEvaluationPanel
-          opp={opp}
-          evaluation={evaluation}
-          onSave={onEvalSave}
-        />
-      )}
-
       {/* Brief expansion panel */}
       {mounted && isExpanded && (
-        <div className="mt-3 pt-3 border-t border-slate-800">
+        <div className="bg-slate-950 rounded-lg p-3 mt-2.5 -mx-4 -mb-3.5">
           {briefLoading ? (
             <div className="space-y-2">
-              {[1,2,3,4].map(i => (
-                <div key={i} className="h-3 bg-slate-800 rounded animate-pulse" style={{ width: `${85 - i * 8}%` }} />
+              {[1, 2, 3, 4].map(i => (
+                <div key={i} className="h-3 bg-slate-900 rounded animate-pulse" style={{ width: `${85 - i * 8}%` }} />
               ))}
             </div>
-          ) : brief ? (
+          ) : briefPoints.length > 0 ? (
             <div className="space-y-2">
-              {brief.split('\n').filter(line => line.trim()).map((line, i) => (
+              {briefPoints.map((point, i) => (
                 <div key={i} className="flex items-start gap-2">
-                  <span className="text-blue-500 mt-0.5 flex-shrink-0">·</span>
-                  <p className="text-slate-300 text-xs leading-relaxed">
-                    {line.replace(/^[\d.\-*•]\s*/, '').trim()}
-                  </p>
+                  <span className="text-slate-700 font-bold text-xs w-4 flex-shrink-0">{i + 1}</span>
+                  <p className="text-slate-500 text-xs leading-relaxed">{point}</p>
                 </div>
               ))}
-              <p className="text-slate-600 text-xs mt-2 pt-2 border-t border-slate-800">
-                AI-generated summary · Always verify details on SAM.gov
+              <p className="text-slate-800 text-xs mt-2 pt-2 border-t border-slate-900">
+                AI summary · Verify on SAM.gov
               </p>
             </div>
           ) : (
-            <p className="text-slate-500 text-xs">Failed to generate brief. Try again.</p>
+            <p className="text-slate-600 text-xs">Failed to generate brief. Try again.</p>
           )}
         </div>
       )}
@@ -371,13 +325,13 @@ function OpportunityCard({
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
-type FilterTab = 'all' | 'pursuing' | 'interested' | 'passed'
+type FilterTab = 'all' | 'pursuing' | 'interested'
+type SortBy = 'score' | 'deadline' | 'value' | 'newest'
 
 const TABS: { key: FilterTab; label: string }[] = [
   { key: 'all',        label: 'All'        },
   { key: 'pursuing',   label: 'Pursuing'   },
   { key: 'interested', label: 'Interested' },
-  { key: 'passed',     label: 'Passed'     },
 ]
 
 export default function DashboardClient({
@@ -390,36 +344,47 @@ export default function DashboardClient({
   userPrefs: UserPreferences | null
 }) {
   const [, startTransition] = useTransition()
+  const [menuOpen, setMenuOpen] = useState(false)
 
-  // Optimistic status map: oppId → status
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      const target = e.target as HTMLElement
+      if (!target.closest('.avatar-menu')) setMenuOpen(false)
+    }
+    if (menuOpen) document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [menuOpen])
+
   const [statuses, setStatuses] = useState<Record<string, OppStatus | null>>(() =>
-    Object.fromEntries(opportunities.map((o) => [o.id, o.status]))
+    Object.fromEntries(opportunities.map(o => [o.id, o.status]))
   )
 
-  const [activeTab, setActiveTab] = useState<FilterTab>('all')
+  const [activeTab, setActiveTab]     = useState<FilterTab>('all')
   const [searchQuery, setSearchQuery] = useState('')
-  const [hideLowScores, setHideLowScores] = useState(false)
+  const [sortBy, setSortBy]           = useState<SortBy>('score')
+  const [visibleCount, setVisibleCount] = useState(20)
 
-  const [briefs, setBriefs] = useState<Record<string, string>>({})
-  const [briefLoading, setBriefLoading] = useState<Record<string, boolean>>({})
+  const [briefs, setBriefs]               = useState<Record<string, string>>({})
+  const [briefLoading, setBriefLoading]   = useState<Record<string, boolean>>({})
   const [expandedBrief, setExpandedBrief] = useState<string | null>(null)
 
-  const [notes, setNotes] = useState<Record<string, string>>(() =>
+  const [notes, setNotes]       = useState<Record<string, string>>(() =>
     Object.fromEntries(opportunities.map(o => [o.id, o.notes ?? '']))
   )
   const [notesOpen, setNotesOpen] = useState<string | null>(null)
 
-  const [datesOpen, setDatesOpen] = useState<string | null>(null)
-
-  const [evaluations, setEvaluations] = useState<Record<string, any>>({})
-  const [evalOpen, setEvalOpen] = useState<string | null>(null)
-  const [bidDueDates, setBidDueDates] = useState<Record<string, string>>(() =>
+  const [bidDueDates] = useState<Record<string, string>>(() =>
     Object.fromEntries(opportunities.map(o => [o.id, o.bid_due_date ?? '']))
   )
-  const [decisionDates, setDecisionDates] = useState<Record<string, string>>(() =>
+  const [decisionDates] = useState<Record<string, string>>(() =>
     Object.fromEntries(opportunities.map(o => [o.id, o.decision_date ?? '']))
   )
 
+  // quickFilter state preserved from prior version (not exposed in new UI)
+  type QuickFilter = 'dod' | 'dhs' | 'closing' | 'highvalue' | null
+  const [quickFilter] = useState<QuickFilter>(null)
+
+  // ── Brief fetch ────────────────────────────────────────────────────────────
   async function fetchBrief(opp: OpportunityWithStatus) {
     if (briefs[opp.id]) {
       setExpandedBrief(expandedBrief === opp.id ? null : opp.id)
@@ -441,9 +406,7 @@ export default function DashboardClient({
         }),
       })
       const data = await res.json()
-      if (data.brief) {
-        setBriefs(prev => ({ ...prev, [opp.id]: data.brief }))
-      }
+      if (data.brief) setBriefs(prev => ({ ...prev, [opp.id]: data.brief }))
     } catch (err) {
       console.error('Brief fetch error:', err)
     } finally {
@@ -451,11 +414,11 @@ export default function DashboardClient({
     }
   }
 
+  // ── Status change (optimistic) ─────────────────────────────────────────────
   function handleStatusChange(oppId: string, newStatus: OppStatus) {
     const current = statuses[oppId]
-    // Clicking active status toggles it off
     const next = current === newStatus ? null : newStatus
-    setStatuses((prev) => ({ ...prev, [oppId]: next }))
+    setStatuses(prev => ({ ...prev, [oppId]: next }))
     startTransition(async () => {
       if (next) await updateOpportunityStatus(oppId, next)
     })
@@ -467,100 +430,137 @@ export default function DashboardClient({
     score: userPrefs ? scoreOpportunity(opp, userPrefs) : 0,
   }))
 
-  const sortedOpportunities = [...scoredOpportunities].sort((a, b) => b.score - a.score)
+  const now      = new Date()
+  const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000)
+  const today    = new Date(); today.setHours(0, 0, 0, 0)
+  const in7days  = new Date(today.getTime() + 7  * 86_400_000)
+  const in14days = new Date(today.getTime() + 14 * 86_400_000)
 
-  const topScore = sortedOpportunities[0]?.score ?? 0
-  const topId = topScore >= 60 ? sortedOpportunities[0]?.id : null
-
-  // ── Derived stats ─────────────────────────────────────────────────────────
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-  const sevenDaysAgo = new Date(today.getTime() - 7 * 86_400_000)
-  const sevenDaysFromNow = new Date(today.getTime() + 7 * 86_400_000)
-  const fourteenDaysFromNow = new Date(today.getTime() + 14 * 86_400_000)
-
-  const newThisWeek = opportunities.filter((o) => {
-    const posted = new Date(o.posted_date)
-    return posted >= sevenDaysAgo && !statuses[o.id]
-  }).length
-
-  const pursuing = Object.values(statuses).filter((s) => s === 'pursuing').length
-  const totalTracked = Object.values(statuses).filter((s) => s !== null).length
-
-  const closingSoon = opportunities.filter((o) => {
-    if (!o.response_deadline) return false
-    const d = new Date(o.response_deadline)
-    return d > today && d <= sevenDaysFromNow
-  }).length
-
-  const closingSoonContracts = opportunities.filter((o) => {
-    if (!o.response_deadline) return false
-    const d = new Date(o.response_deadline)
-    return d > today && d <= sevenDaysFromNow
+  const sortedOpportunities = [...scoredOpportunities].sort((a, b) => {
+    if (sortBy === 'score')    return b.score - a.score
+    if (sortBy === 'deadline') {
+      if (!a.response_deadline) return 1
+      if (!b.response_deadline) return -1
+      return new Date(a.response_deadline).getTime() - new Date(b.response_deadline).getTime()
+    }
+    if (sortBy === 'value') {
+      const aV = a.estimated_value_max ?? a.estimated_value_min ?? 0
+      const bV = b.estimated_value_max ?? b.estimated_value_min ?? 0
+      return bV - aV
+    }
+    if (sortBy === 'newest') return new Date(b.posted_date).getTime() - new Date(a.posted_date).getTime()
+    return b.score - a.score
   })
 
-  const closingSoonList = [
-    ...opportunities
-      .filter((o) => {
-        if (!o.response_deadline) return false
-        const d = new Date(o.response_deadline)
-        return d > today && d <= fourteenDaysFromNow
-      })
-      .map(o => ({ title: o.title, deadline: o.response_deadline!, id: o.id, type: 'deadline' as const })),
-    ...opportunities
-      .filter(o => {
-        const bid = bidDueDates[o.id]
-        if (!bid || statuses[o.id] !== 'pursuing') return false
-        const d = new Date(bid)
-        return d > today && d <= fourteenDaysFromNow
-      })
-      .map(o => ({ title: o.title, deadline: bidDueDates[o.id], id: o.id + '_bid', type: 'bid' as const })),
-  ]
-    .sort((a, b) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime())
-    .slice(0, 4)
+  const topScore = sortBy === 'score' ? (sortedOpportunities[0]?.score ?? 0) : 0
+  const topId    = topScore >= 60 ? sortedOpportunities[0]?.id : null
 
-  // Filtered + sorted list
-  const visible = sortedOpportunities.filter((o) => {
-    const matchesTab = activeTab === 'all' ? true : activeTab === 'pursuing' ? statuses[o.id] === 'pursuing' : activeTab === 'interested' ? statuses[o.id] === 'interested' : statuses[o.id] === 'pass'
-    const matchesSearch = !searchQuery || o.title.toLowerCase().includes(searchQuery.toLowerCase()) || o.agency.toLowerCase().includes(searchQuery.toLowerCase())
-    return matchesTab && matchesSearch && (!hideLowScores || o.score >= 40)
+  // ── Derived stats ──────────────────────────────────────────────────────────
+  const pursuing       = Object.values(statuses).filter(s => s === 'pursuing').length
+  const notYetReviewed = Object.values(statuses).filter(s => s === null).length
+
+  const newSinceYesterday = opportunities.filter(o => {
+    const pd = o.posted_date ? new Date(o.posted_date) : null
+    const ca = o.created_at  ? new Date(o.created_at)  : null
+    return (pd && pd >= yesterday) || (ca && ca >= yesterday)
+  }).length
+
+  const deadlinesThisWeek = opportunities.filter(o => {
+    if (!o.response_deadline) return false
+    const d = new Date(o.response_deadline)
+    return d > today && d <= in7days
+  }).length
+
+  // Most urgent unreviewed-or-pursuing contract closing within 7 days
+  const urgentContract = sortedOpportunities
+    .filter(o => {
+      if (!o.response_deadline) return false
+      const d = new Date(o.response_deadline)
+      const days = Math.ceil((d.getTime() - today.getTime()) / 86_400_000)
+      return days >= 0 && days <= 7 && (statuses[o.id] === null || statuses[o.id] === 'pursuing')
+    })
+    .sort((a, b) =>
+      new Date(a.response_deadline!).getTime() - new Date(b.response_deadline!).getTime()
+    )[0] ?? null
+
+  // Closing soon list for sidebar (within 14 days)
+  const closingSoonList = opportunities
+    .filter(o => {
+      if (!o.response_deadline) return false
+      const d = new Date(o.response_deadline)
+      return d > today && d <= in14days
+    })
+    .sort((a, b) => new Date(a.response_deadline!).getTime() - new Date(b.response_deadline!).getTime())
+    .slice(0, 5)
+
+  // "Pursue now" widget — top pursuing contract, or top scored
+  const pursueNowContract = (
+    scoredOpportunities.filter(o => statuses[o.id] === 'pursuing').sort((a, b) => b.score - a.score)[0]
+    ?? scoredOpportunities.sort((a, b) => b.score - a.score)[0]
+  ) ?? null
+
+  // Filtered list
+  const visible = sortedOpportunities.filter(o => {
+    const matchesTab = activeTab === 'all' ? true
+      : activeTab === 'pursuing'   ? statuses[o.id] === 'pursuing'
+      : statuses[o.id] === 'interested'
+    const matchesSearch = !searchQuery
+      || o.title.toLowerCase().includes(searchQuery.toLowerCase())
+      || o.agency.toLowerCase().includes(searchQuery.toLowerCase())
+    const matchesQuick = !quickFilter
+      || (quickFilter === 'dod'       && o.agency.toUpperCase().includes('DEFENSE'))
+      || (quickFilter === 'dhs'       && o.agency.toUpperCase().includes('HOMELAND'))
+      || (quickFilter === 'closing'   && !!o.response_deadline && new Date(o.response_deadline) > today && new Date(o.response_deadline) <= in14days)
+      || (quickFilter === 'highvalue' && (o.estimated_value_min ?? 0) >= 1_000_000)
+    return matchesTab && matchesSearch && matchesQuick
   })
 
-  // Top agencies from visible list
-  const visibleAgencyCounts = visible.reduce((acc, o) => {
-    if (o.agency) acc[o.agency] = (acc[o.agency] ?? 0) + 1
-    return acc
-  }, {} as Record<string, number>)
-  const topAgencies = Object.entries(visibleAgencyCounts).sort((a, b) => b[1] - a[1]).slice(0, 4)
-  const maxCount = topAgencies[0]?.[1] ?? 1
+  const visibleSlice = visible.slice(0, visibleCount)
 
-  // Greeting
-  const hour = new Date().getHours()
-  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening'
+  // ── Greeting ───────────────────────────────────────────────────────────────
+  const hour      = new Date().getHours()
+  const greeting  = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening'
   const firstName = email.split('@')[0]
   const dateLabel = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })
-  const initials = firstName.slice(0, 2).toUpperCase()
+  const initials  = firstName.slice(0, 2).toUpperCase()
+
+  // ── Profile completeness ───────────────────────────────────────────────────
+  const completeness = [
+    (userPrefs?.keywords?.length    ?? 0) > 0,
+    (userPrefs?.naics_codes?.length ?? 0) > 0,
+    (userPrefs?.certifications?.length ?? 0) > 0,
+    (userPrefs?.agencies?.length    ?? 0) > 0,
+  ].filter(Boolean).length * 25
+  const hasCertifications = (userPrefs?.certifications?.length ?? 0) > 0
+  const hasKeywords       = (userPrefs?.keywords?.length       ?? 0) > 0
+
+  const hoursSaved = (opportunities.length * 5 / 60).toFixed(1)
+
+  // ─── Suppress unused-var warnings for preserved state ───────────────────
+  void bidDueDates
+  void decisionDates
+
+  // ─────────────────────────────────────────────────────────────────────────
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#060d1a', color: '#f1f5f9' }}>
+    <div style={{ backgroundColor: '#020817', minHeight: '100vh' }}>
 
-      {/* ── Header ── */}
+      {/* ── Navbar ── */}
       <header
-        className="sticky top-0 z-50 border-b"
-        style={{ backgroundColor: '#0a0f1e', borderColor: '#1e293b', height: '3.5rem' }}
+        className="sticky top-0 z-50 h-14 border-b"
+        style={{ backgroundColor: '#0a0f1e', borderColor: '#1e293b' }}
       >
-        <div className="max-w-7xl mx-auto px-8 h-full flex items-center justify-between">
-
+        <div className="h-full px-6 flex items-center justify-between">
           {/* Left: logo only */}
           <Link href="/" className="text-4xl font-extrabold tracking-tight">
             <span className="text-white">Fed</span><span className="text-red-500">Scout</span>
           </Link>
 
-          {/* Right: nav tabs + email + avatar + sign out */}
-          <div className="flex items-center h-full">
-            <nav className="flex items-center h-full mr-6">
+          {/* Right: nav tabs + divider + email + avatar */}
+          <div className="flex items-center gap-5 h-full">
+            <nav className="flex items-center h-full">
               {[
-                { label: 'Dashboard', href: '/dashboard', active: true },
+                { label: 'Dashboard', href: '/dashboard', active: true  },
                 { label: 'Pipeline',  href: '/pipeline',  active: false },
                 { label: 'Settings',  href: '/settings',  active: false },
               ].map(({ label, href, active }) => (
@@ -570,7 +570,8 @@ export default function DashboardClient({
                   className="flex items-center h-full px-3 text-xs border-b-2 transition-colors"
                   style={{
                     borderBottomColor: active ? '#dc2626' : 'transparent',
-                    color: active ? '#f1f5f9' : '#475569',
+                    color: active ? '#f1f5f9' : '#334155',
+                    fontWeight: active ? 700 : 400,
                   }}
                 >
                   {label}
@@ -578,380 +579,362 @@ export default function DashboardClient({
               ))}
             </nav>
 
-            <div className="flex items-center gap-4">
-              <span className="hidden sm:block text-xs" style={{ color: '#475569' }}>{email}</span>
+            <div className="w-px h-5 bg-slate-800" />
 
-              <div
-                className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0"
-                style={{ backgroundColor: '#1e3a8a', color: '#93c5fd' }}
+            <span className="text-slate-600 text-xs hidden sm:block">{email}</span>
+
+            <div className="avatar-menu relative">
+              <button
+                onClick={() => setMenuOpen(m => !m)}
+                className="w-8 h-8 rounded-full bg-blue-900 text-blue-300 text-xs font-bold flex items-center justify-center cursor-pointer hover:bg-blue-800 transition-colors"
               >
                 {initials}
-              </div>
-
-              <form action={logout}>
-                <button
-                  type="submit"
-                  className="text-xs transition-colors"
-                  style={{ color: '#475569' }}
-                  onMouseEnter={e => (e.currentTarget.style.color = '#94a3b8')}
-                  onMouseLeave={e => (e.currentTarget.style.color = '#475569')}
-                >
-                  Sign out
-                </button>
-              </form>
+              </button>
+              {menuOpen && (
+                <div className="absolute right-0 top-10 w-48 bg-slate-900 border border-slate-800 rounded-xl shadow-xl z-50 overflow-hidden">
+                  <div className="px-4 py-3 border-b border-slate-800">
+                    <p className="text-slate-300 text-xs font-semibold truncate">{email}</p>
+                  </div>
+                  <Link
+                    href="/settings"
+                    onClick={() => setMenuOpen(false)}
+                    className="flex items-center gap-2 px-4 py-2.5 text-slate-400 text-xs hover:bg-slate-800 hover:text-slate-200 transition-colors"
+                  >
+                    Settings
+                  </Link>
+                  <button
+                    onClick={async () => {
+                      const supabase = createClient()
+                      await supabase.auth.signOut()
+                      window.location.href = '/'
+                    }}
+                    className="w-full flex items-center gap-2 px-4 py-2.5 text-red-400 text-xs hover:bg-slate-800 transition-colors text-left"
+                  >
+                    Sign out
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>
       </header>
 
-      {/* ── Urgent banner ── */}
-      {closingSoon > 0 && (
-        <div
-          className="border-b px-8 py-2 flex items-center justify-between"
-          style={{ backgroundColor: '#1c1400', borderColor: '#78350f', borderBottomWidth: '0.5px' }}
-        >
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: '#d97706' }} />
-            <span className="text-xs font-semibold whitespace-normal" style={{ color: '#fbbf24' }}>
-              {closingSoon} contract{closingSoon > 1 ? 's' : ''} closing within 7 days
-            </span>
-            <span className="text-xs hidden sm:block whitespace-normal" style={{ color: '#92400e' }}>
-              — {closingSoonContracts.slice(0, 2).map(o => o.title.split(' ').slice(0, 4).join(' ')).join(', ')}
-            </span>
-          </div>
-          <button
-            type="button"
-            className="rounded border px-3 py-1 text-xs transition-colors flex-shrink-0 ml-4"
-            style={{ borderColor: '#78350f', color: '#d97706' }}
-            onClick={() => setActiveTab('all')}
-          >
-            Review
-          </button>
-        </div>
-      )}
+      {/* ── Body: 2-column grid ── */}
+      <div className="p-6 gap-4" style={{ display: 'grid', gridTemplateColumns: '1fr 220px' }}>
 
-      {/* ── Body ── */}
-      <div className="max-w-7xl mx-auto px-8 py-5">
+        {/* ── Left column ── */}
+        <div>
 
-        {/* Greeting */}
-        <div className="mb-5">
-          <h1 className="text-2xl font-extrabold tracking-tight" style={{ color: '#f1f5f9' }}>
+          {/* Greeting */}
+          <p className="text-slate-100 text-lg font-extrabold tracking-tight">
             {greeting}, {firstName}
-          </h1>
-          <p className="text-sm mt-1 text-slate-400">
-            {dateLabel} · {newThisWeek} new this week · {opportunities.length} total in database
           </p>
-        </div>
+          <p className="text-slate-700 text-xs mt-1 mb-4">
+            {dateLabel} · FedScout found {newSinceYesterday} new contracts matching your profile overnight
+          </p>
 
-        {/* Stats row */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
-          {[
-            {
-              label: 'NEW THIS WEEK',
-              value: newThisWeek,
-              valueColor: '#f1f5f9',
-              sub: `${newThisWeek} new · ${opportunities.length} total`,
-              subColor: '#16a34a',
-            },
-            {
-              label: 'PURSUING',
-              value: pursuing,
-              valueColor: '#f1f5f9',
-              sub: pursuing > 0 ? `${pursuing} active bid${pursuing > 1 ? 's' : ''}` : 'None yet',
-              subColor: '#475569',
-            },
-            {
-              label: 'CLOSING SOON',
-              value: closingSoon,
-              valueColor: closingSoon > 0 ? '#fbbf24' : '#f1f5f9',
-              sub: 'Within 7 days',
-              subColor: '#475569',
-            },
-            {
-              label: 'TOTAL TRACKED',
-              value: totalTracked,
-              valueColor: '#f1f5f9',
-              sub: 'Pursuing + Interested',
-              subColor: '#475569',
-            },
-          ].map(({ label, value, valueColor, sub, subColor }) => (
-            <div
-              key={label}
-              className="rounded-xl p-3 border"
-              style={{ backgroundColor: '#0f172a', borderColor: '#1e293b' }}
-            >
-              <p className="text-3xl font-extrabold mb-0.5" style={{ color: valueColor }}>{value}</p>
-              <p className="text-xs uppercase tracking-wider mb-1" style={{ color: '#475569' }}>{label}</p>
-              <p className="text-xs" style={{ color: subColor }}>{sub}</p>
+          {/* Stats row */}
+          <div className="grid grid-cols-4 gap-2 mb-4">
+            <div className="bg-slate-900 border border-slate-800 rounded-xl p-3">
+              <p className="text-blue-400 text-2xl font-extrabold">{newSinceYesterday}</p>
+              <p className="text-slate-700 text-xs uppercase tracking-wide mt-1">New since yesterday</p>
             </div>
-          ))}
-        </div>
-
-        {/* Main layout: feed + sidebar */}
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-4">
-
-          {/* ── Left: opportunity feed ── */}
-          <div className="rounded-xl border" style={{ backgroundColor: '#0f172a', borderColor: '#1e293b' }}>
-
-            {/* Feed header */}
-            <div
-              className="flex items-center justify-between px-5 py-3 border-b"
-              style={{ borderColor: '#1e293b' }}
-            >
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-extrabold" style={{ color: '#f1f5f9' }}>Your opportunities</span>
-                {newThisWeek > 0 && (
-                  <span
-                    className="rounded-full px-2 py-0.5 text-xs"
-                    style={{ backgroundColor: '#7f1d1d', color: '#fca5a5' }}
-                  >
-                    {newThisWeek} new this week
-                  </span>
-                )}
-              </div>
+            <div className="bg-slate-900 border border-slate-800 rounded-xl p-3">
+              <p className="text-slate-100 text-2xl font-extrabold">{pursuing}</p>
+              <p className="text-slate-700 text-xs uppercase tracking-wide mt-1">Actively pursuing</p>
             </div>
-
-            {/* Search + filter */}
-            <div className="px-5 pt-3">
-              <input
-                type="text"
-                placeholder="Search contracts..."
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-100 placeholder-slate-600 focus:border-red-600 focus:outline-none mb-2"
-              />
-              <label className="flex items-center gap-2 cursor-pointer mb-3">
-                <input
-                  type="checkbox"
-                  checked={hideLowScores}
-                  onChange={e => setHideLowScores(e.target.checked)}
-                  className="h-3 w-3 accent-red-600"
-                />
-                <span className="text-slate-500 text-xs">Hide low matches (under 40)</span>
-              </label>
+            <div className="bg-slate-900 border border-slate-800 rounded-xl p-3">
+              <p className={`text-2xl font-extrabold ${deadlinesThisWeek > 0 ? 'text-amber-400' : 'text-slate-100'}`}>
+                {deadlinesThisWeek}
+              </p>
+              <p className="text-slate-700 text-xs uppercase tracking-wide mt-1">Deadlines this week</p>
             </div>
+            <div className="bg-slate-900 border border-slate-800 rounded-xl p-3">
+              <p className={`text-2xl font-extrabold ${notYetReviewed > 0 ? 'text-red-400' : 'text-slate-100'}`}>
+                {notYetReviewed}
+              </p>
+              <p className="text-slate-700 text-xs uppercase tracking-wide mt-1">Not yet reviewed</p>
+            </div>
+          </div>
 
-            {/* Filter tabs */}
-            <div className="flex border-b" style={{ borderColor: '#1e293b' }}>
-              {TABS.map(({ key, label }) => (
+          {/* Urgency strip */}
+          {urgentContract && (() => {
+            const daysLeft = Math.ceil(
+              (new Date(urgentContract.response_deadline!).getTime() - today.getTime()) / 86_400_000
+            )
+            const val      = formatValue(urgentContract.estimated_value_min, urgentContract.estimated_value_max)
+            const setAside = getSetAsideBadge(urgentContract.title, urgentContract.description ?? '')
+            const unreviewed = statuses[urgentContract.id] === null
+            const shortTitle = urgentContract.title.split(' ').slice(0, 8).join(' ') +
+              (urgentContract.title.split(' ').length > 8 ? '…' : '')
+            return (
+              <div
+                className="flex items-center justify-between bg-slate-900 rounded-r-lg px-4 py-2.5 mb-4"
+                style={{
+                  borderLeft:   '2px solid #f59e0b',
+                  borderTop:    '1px solid #1e293b',
+                  borderRight:  '1px solid #1e293b',
+                  borderBottom: '1px solid #1e293b',
+                }}
+              >
+                <div>
+                  <p className="text-amber-400 text-xs font-semibold">
+                    {shortTitle} — closes in {daysLeft} day{daysLeft !== 1 ? 's' : ''} · {urgentContract.score}% match score
+                  </p>
+                  <p className="text-amber-900 text-xs mt-0.5">
+                    {setAside ?? 'Open'} · {val || 'Value TBD'} · {unreviewed ? "You haven't reviewed this yet" : 'Pursuing'}
+                  </p>
+                </div>
                 <button
-                  key={key}
                   type="button"
-                  onClick={() => setActiveTab(key)}
-                  className="px-4 py-2.5 text-xs border-b-2 -mb-px transition-colors"
-                  style={{
-                    borderBottomColor: activeTab === key ? '#dc2626' : 'transparent',
-                    color: activeTab === key ? '#f1f5f9' : '#475569',
+                  onClick={() => {
+                    setSearchQuery(urgentContract.title.split(' ').slice(0, 3).join(' '))
+                    setActiveTab('all')
                   }}
+                  className="text-amber-500 text-xs font-bold cursor-pointer ml-4 flex-shrink-0"
                 >
-                  {label}
-                  {key === 'all' && (
-                    <span
-                      className="ml-1.5 rounded-full px-1.5 py-0.5 text-xs"
-                      style={{ backgroundColor: '#1e293b', color: '#64748b' }}
-                    >
-                      {opportunities.length}
-                    </span>
-                  )}
+                  Review →
                 </button>
-              ))}
+              </div>
+            )
+          })()}
+
+          {/* Feed container */}
+          <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
+
+            {/* Toolbar */}
+            <div className="px-4 py-3 border-b border-slate-800 flex items-center gap-2">
+              {/* Search */}
+              <div className="flex-1 bg-slate-950 border border-slate-800 rounded-lg px-3 h-8 flex items-center gap-2">
+                <svg
+                  width="12" height="12" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                  className="text-slate-700 opacity-50 flex-shrink-0"
+                >
+                  <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
+                </svg>
+                <input
+                  type="text"
+                  placeholder="Search contracts..."
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  className="bg-transparent border-none outline-none text-xs text-slate-400 placeholder-slate-700 flex-1"
+                />
+              </div>
+              {/* Tab buttons */}
+              <div className="flex gap-1">
+                {TABS.map(({ key, label }) => (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => setActiveTab(key)}
+                    className={`text-xs px-3 py-1.5 rounded-md transition-colors ${
+                      activeTab === key
+                        ? 'bg-slate-800 text-slate-300 font-semibold'
+                        : 'text-slate-700'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+              {/* Sort */}
+              <select
+                value={sortBy}
+                onChange={e => setSortBy(e.target.value as SortBy)}
+                className="bg-slate-950 border border-slate-800 text-slate-700 text-xs rounded-md px-2 py-1.5"
+              >
+                <option value="score">Best match</option>
+                <option value="deadline">Deadline</option>
+                <option value="value">Value</option>
+                <option value="newest">Newest</option>
+              </select>
             </div>
 
-            {/* Cards / empty state */}
+            {/* Cards / empty states */}
             {opportunities.length === 0 ? (
               <div className="py-20 text-center px-4">
-                <svg className="h-8 w-8 mx-auto mb-3" style={{ color: '#334155' }} fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
-                </svg>
-                <p className="text-sm font-semibold mb-1" style={{ color: '#64748b' }}>
+                <p className="text-sm font-semibold mb-1 text-slate-600">
                   We&apos;re loading contracts for your profile
                 </p>
-                <p className="text-xs" style={{ color: '#475569' }}>
+                <p className="text-xs text-slate-700">
                   Check back soon — or{' '}
-                  <Link href="/settings" style={{ color: '#60a5fa' }}>update your keywords</Link>
+                  <Link href="/settings" className="text-blue-500">update your keywords</Link>
                   {' '}in Settings.
                 </p>
               </div>
             ) : visible.length === 0 ? (
-              <div className="py-20 text-center px-4">
-                <svg className="h-10 w-10 mx-auto mb-4" style={{ color: '#334155' }} fill="none" stroke="currentColor" strokeWidth={1} viewBox="0 0 48 48">
-                  <rect x="8" y="4" width="24" height="32" rx="2" strokeWidth="2" />
-                  <path d="M14 14h12M14 20h8" strokeWidth="2" strokeLinecap="round" />
-                  <circle cx="36" cy="36" r="8" strokeWidth="2" />
-                  <path d="M42 42l-4-4" strokeWidth="2" strokeLinecap="round" />
-                </svg>
-                <p className="text-sm font-bold mb-1" style={{ color: '#64748b' }}>No contracts found</p>
-                <p className="text-xs mb-4" style={{ color: '#475569' }}>
+              <div className="py-16 text-center px-4">
+                <p className="text-sm font-bold mb-1 text-slate-600">No contracts found</p>
+                <p className="text-xs text-slate-700 mb-4">
                   Try broadening your search or updating your keywords in Settings.
                 </p>
-                <div className="flex items-center justify-center gap-3">
-                  <Link
-                    href="/settings"
-                    className="text-xs px-4 py-2 rounded-lg border transition-colors"
-                    style={{ borderColor: '#334155', color: '#64748b' }}
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery('')}
+                    className="text-xs px-4 py-2 rounded-lg border border-slate-800 text-slate-600"
                   >
-                    Update keywords
-                  </Link>
-                  {searchQuery && (
+                    Clear search
+                  </button>
+                )}
+              </div>
+            ) : (
+              <>
+                {visibleSlice.map(opp => {
+                  const postedDate = opp.posted_date ? new Date(opp.posted_date) : null
+                  const createdAt  = opp.created_at  ? new Date(opp.created_at)  : null
+                  const isNew = Boolean(
+                    (postedDate && postedDate >= yesterday) || (createdAt && createdAt >= yesterday)
+                  )
+                  return (
+                    <OpportunityCard
+                      key={opp.id}
+                      opp={opp}
+                      status={statuses[opp.id] ?? null}
+                      onStatusChange={handleStatusChange}
+                      score={opp.score}
+                      showTopMatch={opp.id === topId}
+                      showScore={!!userPrefs}
+                      userPrefs={userPrefs}
+                      brief={briefs[opp.id]}
+                      briefLoading={!!briefLoading[opp.id]}
+                      isExpanded={expandedBrief === opp.id}
+                      onGetBrief={() => fetchBrief(opp)}
+                      noteText={notes[opp.id] ?? ''}
+                      notesOpen={notesOpen === opp.id}
+                      onToggleNotes={() => setNotesOpen(notesOpen === opp.id ? null : opp.id)}
+                      onNoteChange={text => setNotes(prev => ({ ...prev, [opp.id]: text }))}
+                      onNoteBlur={() => updateOpportunityNotes(opp.id, notes[opp.id] ?? '')}
+                      isNew={isNew}
+                    />
+                  )
+                })}
+
+                {/* Load more row */}
+                <div className="px-4 py-2.5 border-t border-slate-800 flex justify-between items-center">
+                  <span className="text-slate-700 text-xs">
+                    Showing {visibleSlice.length} of {visible.length} contracts
+                  </span>
+                  {visibleCount < visible.length && (
                     <button
                       type="button"
-                      onClick={() => setSearchQuery('')}
-                      className="text-xs px-4 py-2 rounded-lg border transition-colors"
-                      style={{ borderColor: '#334155', color: '#64748b' }}
+                      onClick={() => setVisibleCount(prev => prev + 20)}
+                      className="text-blue-500 text-xs font-semibold cursor-pointer"
                     >
-                      Clear search
+                      Load more →
                     </button>
                   )}
                 </div>
-              </div>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* ── Sidebar ── */}
+        <div className="flex flex-col gap-3">
+
+          {/* Widget 1 — Pursue now */}
+          <div className="bg-slate-900 border border-slate-800 rounded-xl p-4">
+            <p className="text-slate-700 text-xs font-bold uppercase tracking-widest mb-3">Pursue now</p>
+            {pursueNowContract ? (() => {
+              const val      = formatValue(pursueNowContract.estimated_value_min, pursueNowContract.estimated_value_max)
+              const setAside = getSetAsideBadge(pursueNowContract.title, pursueNowContract.description ?? '')
+              const dl       = deadlineInfo(pursueNowContract.response_deadline)
+              const shortTitle = pursueNowContract.title.split(' ').slice(0, 8).join(' ') +
+                (pursueNowContract.title.split(' ').length > 8 ? '…' : '')
+              const nextDeadline = closingSoonList[0]
+              return (
+                <>
+                  <div className="bg-green-950 border border-green-900 rounded-lg p-3 mb-2">
+                    <p className="text-green-400 text-xs font-bold leading-snug mb-1">{shortTitle}</p>
+                    <p className="text-green-900 text-xs mb-2">
+                      {pursueNowContract.score}% match · {val || 'TBD'} · {setAside ?? 'Open'}
+                    </p>
+                    {dl.daysLeft !== null && dl.daysLeft >= 0 && (
+                      <span className="bg-amber-950 text-amber-500 text-xs font-bold px-2 py-0.5 rounded inline-block">
+                        {dl.daysLeft}d left
+                      </span>
+                    )}
+                  </div>
+                  {nextDeadline && (
+                    <p className="text-slate-800 text-xs text-center">
+                      Next deadline: {nextDeadline.title.split(' ').slice(0, 4).join(' ')}… ·{' '}
+                      {new Date(nextDeadline.response_deadline!).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                    </p>
+                  )}
+                </>
+              )
+            })() : (
+              <p className="text-slate-700 text-xs">No opportunities yet.</p>
+            )}
+          </div>
+
+          {/* Widget 2 — Closing soon */}
+          <div className="bg-slate-900 border border-slate-800 rounded-xl p-4">
+            <p className="text-slate-700 text-xs font-bold uppercase tracking-widest mb-3">Closing soon</p>
+            {closingSoonList.length === 0 ? (
+              <p className="text-slate-800 text-xs">No contracts closing soon</p>
             ) : (
               <div>
-                {visible.map((opp) => (
-                  <OpportunityCard
-                    key={opp.id}
-                    opp={opp}
-                    status={statuses[opp.id] ?? null}
-                    onStatusChange={handleStatusChange}
-                    score={opp.score}
-                    showTopMatch={opp.id === topId}
-                    showScore={!!userPrefs}
-                    userPrefs={userPrefs}
-                    brief={briefs[opp.id]}
-                    briefLoading={!!briefLoading[opp.id]}
-                    isExpanded={expandedBrief === opp.id}
-                    onGetBrief={() => fetchBrief(opp)}
-                    noteText={notes[opp.id] ?? ''}
-                    notesOpen={notesOpen === opp.id}
-                    onToggleNotes={() => setNotesOpen(notesOpen === opp.id ? null : opp.id)}
-                    onNoteChange={text => setNotes(prev => ({ ...prev, [opp.id]: text }))}
-                    onNoteBlur={() => updateOpportunityNotes(opp.id, notes[opp.id] ?? '')}
-                    datesOpen={datesOpen === opp.id}
-                    onToggleDates={() => setDatesOpen(datesOpen === opp.id ? null : opp.id)}
-                    bidDueDate={bidDueDates[opp.id] ?? ''}
-                    decisionDate={decisionDates[opp.id] ?? ''}
-                    onBidDueDateChange={date => setBidDueDates(prev => ({ ...prev, [opp.id]: date }))}
-                    onDecisionDateChange={date => setDecisionDates(prev => ({ ...prev, [opp.id]: date }))}
-                    onDatesBlur={() => updateOpportunityDates(opp.id, bidDueDates[opp.id] || null, decisionDates[opp.id] || null)}
-                    evalOpen={evalOpen === opp.id}
-                    onToggleEval={() => setEvalOpen(evalOpen === opp.id ? null : opp.id)}
-                    evaluation={evaluations[opp.id]}
-                    onEvalSave={ev => setEvaluations(prev => ({ ...prev, [opp.id]: ev }))}
-                  />
-                ))}
+                {closingSoonList.map(o => {
+                  const d        = new Date(o.response_deadline!)
+                  const daysLeft = Math.ceil((d.getTime() - today.getTime()) / 86_400_000)
+                  const dlLabel  = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                  const isUrgent = daysLeft < 14
+                  return (
+                    <div key={o.id} className="flex justify-between py-1.5 border-b border-slate-950">
+                      <span className="text-slate-500 text-xs flex-1 mr-2 truncate">{o.title}</span>
+                      <span
+                        className={`text-xs px-2 rounded flex-shrink-0 ${
+                          isUrgent ? 'bg-amber-950 text-amber-500' : 'bg-slate-800 text-slate-600'
+                        }`}
+                      >
+                        {dlLabel}
+                      </span>
+                    </div>
+                  )
+                })}
               </div>
             )}
           </div>
 
-          {/* ── Right: sidebar ── */}
-          <div className="flex flex-col gap-3">
-
-            {/* Daily Briefing */}
-            <div
-              className="rounded-xl border p-4"
-              style={{ backgroundColor: '#172554', borderColor: '#1e3a8a' }}
-            >
-              <p className="text-sm font-bold mb-1" style={{ color: '#93c5fd' }}>
-                Daily Briefing
-              </p>
-              <p className="text-xs mb-2 leading-relaxed" style={{ color: '#60a5fa' }}>
-                Your matched contracts delivered to your inbox every morning at 8am EST.
-              </p>
-              <p className="text-xs font-semibold mb-2" style={{ color: '#93c5fd' }}>
-                Tomorrow · 8:00 AM
-              </p>
-              {opportunities.length === 0 ? (
-                <p className="text-xs" style={{ color: '#3b82f6' }}>
-                  No matches queued for tomorrow.{' '}
-                  <Link href="/settings" style={{ color: '#93c5fd' }}>Update your keywords</Link>
-                  {' '}to get better matches.
-                </p>
-              ) : (
-                <span
-                  className="inline-block rounded-full px-2 py-0.5 text-xs animate-pulse"
-                  style={{ backgroundColor: '#1e3a8a', color: '#93c5fd' }}
-                >
-                  {opportunities.length} matches queued
-                </span>
+          {/* Widget 3 — Improve your matches */}
+          <div className="bg-slate-900 border border-slate-800 rounded-xl p-4">
+            <p className="text-slate-700 text-xs font-bold uppercase tracking-widest mb-2">Improve your matches</p>
+            <div className="h-1 bg-slate-800 rounded-full mb-1">
+              <div className="h-1 bg-red-600 rounded-full" style={{ width: `${completeness}%` }} />
+            </div>
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-slate-700 text-xs">Profile {completeness}% complete</span>
+              <Link href="/settings" className="text-red-600 text-xs font-bold">Fix this →</Link>
+            </div>
+            <div className="space-y-1">
+              {!hasKeywords && (
+                <p className="text-slate-700 text-xs">· Add past performance to boost match scores</p>
+              )}
+              {!hasCertifications && (
+                <p className="text-slate-700 text-xs">· Add certifications to unlock set-aside contracts</p>
               )}
             </div>
-
-            {/* Top agencies */}
-            <div
-              className="rounded-xl border p-4"
-              style={{ backgroundColor: '#0f172a', borderColor: '#1e293b' }}
-            >
-              <p className="text-sm font-bold mb-3" style={{ color: '#475569' }}>
-                Top agencies
-              </p>
-              {topAgencies.length === 0 ? (
-                <p className="text-xs" style={{ color: '#334155' }}>No data yet</p>
-              ) : (
-                <div className="space-y-3">
-                  {topAgencies.map(([agency, count]) => (
-                    <div key={agency}>
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-sm" style={{ color: '#94a3b8' }}>
-                          {getAgencyShortName(agency)}
-                        </span>
-                        <span className="text-xs ml-2 flex-shrink-0" style={{ color: '#475569' }}>{count}</span>
-                      </div>
-                      <div className="h-1 rounded-full" style={{ backgroundColor: '#1e293b' }}>
-                        <div
-                          className="h-full rounded-full"
-                          style={{ backgroundColor: '#7f1d1d', width: `${(count / maxCount) * 100}%` }}
-                        />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Deadlines */}
-            <div
-              className="rounded-xl border p-4"
-              style={{ backgroundColor: '#0f172a', borderColor: '#1e293b' }}
-            >
-              <p className="text-sm font-bold mb-3" style={{ color: '#475569' }}>
-                Closing soon
-              </p>
-              {closingSoonList.length === 0 ? (
-                <p className="text-xs" style={{ color: '#334155' }}>Nothing in the next 14 days</p>
-              ) : (
-                <div className="space-y-3">
-                  {closingSoonList.map((item) => {
-                    const d = new Date(item.deadline)
-                    const days = Math.ceil((d.getTime() - today.getTime()) / 86_400_000)
-                    const isUrgent = days < 7
-                    const dlLabel = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-                    return (
-                      <div key={item.id} className="flex items-start justify-between gap-2">
-                        <div className="flex-1 min-w-0">
-                          <span className="text-sm leading-snug block" style={{ color: '#94a3b8' }}>
-                            {item.title.split(' ').slice(0, 5).join(' ')}…
-                          </span>
-                          {item.type === 'bid' && (
-                            <span className="text-xs" style={{ color: '#64748b' }}>📋 Bid due</span>
-                          )}
-                        </div>
-                        <span
-                          className="rounded px-1.5 py-0.5 text-xs flex-shrink-0"
-                          style={
-                            isUrgent
-                              ? { backgroundColor: '#451a03', color: '#fbbf24' }
-                              : { backgroundColor: '#1e293b', color: '#94a3b8' }
-                          }
-                        >
-                          {dlLabel}
-                        </span>
-                      </div>
-                    )
-                  })}
-                </div>
-              )}
-            </div>
-
           </div>
+
+          {/* Widget 4 — FedScout saved you */}
+          <div className="bg-blue-950 border border-blue-900 rounded-xl p-4">
+            <p className="text-blue-900 text-xs font-bold uppercase tracking-widest mb-3">FedScout saved you</p>
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-blue-500 text-xs">Hours on SAM.gov</span>
+              <span className="text-blue-200 text-xs font-extrabold">{hoursSaved} hrs</span>
+            </div>
+            <div className="flex justify-between items-center mb-3">
+              <span className="text-blue-500 text-xs">Contracts reviewed</span>
+              <span className="text-blue-200 text-xs font-extrabold">{opportunities.length} this month</span>
+            </div>
+            <div className="border-t border-blue-900 pt-2">
+              <p className="text-blue-900 text-xs">Based on avg 5 min per contract manually</p>
+            </div>
+          </div>
+
         </div>
       </div>
     </div>
