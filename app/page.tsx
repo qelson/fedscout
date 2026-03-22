@@ -19,7 +19,7 @@ export default function Home() {
             <a href="/#pricing" className="hidden md:block text-sm text-slate-400 hover:text-slate-200 transition-colors">Pricing</a>
             <div className="hidden md:block"><NavAuth /></div>
             <Link
-              href="/quiz"
+              href="/signup"
               className="rounded-md px-4 py-2 text-sm font-semibold text-white transition-colors bg-red-700 hover:bg-red-800"
             >
               Start free trial
@@ -44,7 +44,7 @@ export default function Home() {
 
             <div className="flex flex-col sm:flex-row gap-3 mb-8">
               <Link
-                href="/quiz"
+                href="/signup"
                 className="inline-flex items-center justify-center rounded-md px-6 py-2.5 text-sm font-bold text-white transition-colors bg-red-700 hover:bg-red-800"
               >
                 Find my contracts →
@@ -335,7 +335,7 @@ export default function Home() {
             </ul>
 
             <Link
-              href="/quiz"
+              href="/signup"
               className="mt-8 block w-full rounded-xl py-3 text-center text-sm font-bold text-white transition-colors bg-red-700 hover:bg-red-600"
             >
               Start free trial →
@@ -355,7 +355,7 @@ export default function Home() {
           Start your free trial and see what you&apos;ve been missing.
         </p>
         <Link
-          href="/quiz"
+          href="/signup"
           className="inline-block rounded-lg px-8 py-3 text-sm font-extrabold transition-colors"
           style={{ backgroundColor: '#ffffff', color: '#b91c1c' }}
         >

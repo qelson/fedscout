@@ -1,11 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { savePreferences } from './actions'
 
-// ─── Data ────────────────────────────────────────────────────────────────────
+// ─── Data ─────────────────────────────────────────────────────────────────────
 
 const NAICS_OPTIONS = [
   { code: '541511', label: 'Custom Computer Programming Services' },
@@ -30,24 +30,14 @@ const SIZE_OPTIONS = [
   { label: '$10M+',         min: 10_000_000,  max: null },
 ]
 
-// ─── Sub-components ───────────────────────────────────────────────────────────
-
-function ProgressBar({ step, total }: { step: number; total: number }) {
-  return (
-    <div className="mb-8">
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-xs text-gray-400">Step {step} of {total}</span>
-        <span className="text-xs text-gray-400">{Math.round((step / total) * 100)}%</span>
-      </div>
-      <div className="h-1 bg-gray-100 rounded-full overflow-hidden">
-        <div
-          className="h-full bg-gray-900 rounded-full transition-all duration-500"
-          style={{ width: `${(step / total) * 100}%` }}
-        />
-      </div>
-    </div>
-  )
-}
+const CERT_OPTIONS = [
+  '8(a) Business Development Program',
+  'Woman-Owned Small Business (WOSB)',
+  'Service-Disabled Veteran-Owned (SDVOSB)',
+  'HUBZone Certified',
+  'Veteran-Owned Small Business (VOSB)',
+  'None currently',
+]
 
 // ─── Step 1: NAICS ────────────────────────────────────────────────────────────
 
@@ -88,50 +78,47 @@ function StepNaics({
   }
 
   return (
-    <div className="space-y-5">
-      <div>
-        <h2 className="text-xl font-semibold text-gray-900">What type of work do you pursue?</h2>
-        <p className="mt-1 text-sm text-gray-500">Select all NAICS codes that apply to your business.</p>
-      </div>
+    <div>
+      <h2 className="text-slate-100 text-xl font-bold leading-snug mb-2">
+        What type of work do you pursue?
+      </h2>
+      <p className="text-slate-500 text-sm mb-4">Select all NAICS codes that apply to your business.</p>
+      <p className="text-slate-600 text-xs mb-3">(select all that apply)</p>
 
       <input
         type="text"
         placeholder="Search NAICS codes…"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900"
+        className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-slate-100 text-sm placeholder-slate-600 focus:border-red-600 focus:outline-none mb-3"
       />
 
-      <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+      <div className="flex flex-col gap-2 max-h-52 overflow-y-auto pr-1 mb-4">
         {filtered.map((o) => {
           const checked = selected.includes(o.code)
           return (
-            <label
+            <button
               key={o.code}
-              className={`flex items-start gap-3 rounded-lg border p-3 cursor-pointer transition-colors ${
-                checked ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
+              type="button"
+              onClick={() => toggle(o.code)}
+              className={`w-full text-left rounded-xl px-5 py-3.5 text-sm transition-all cursor-pointer border ${
+                checked
+                  ? 'border-red-600 bg-red-950/50 text-white'
+                  : 'bg-slate-800 border-slate-700 text-slate-300 hover:border-slate-500 hover:bg-slate-800/80'
               }`}
             >
-              <input
-                type="checkbox"
-                checked={checked}
-                onChange={() => toggle(o.code)}
-                className="mt-0.5 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-              />
-              <span className="flex-1 min-w-0">
-                <span className="block text-sm font-medium text-gray-900">{o.label}</span>
-                <span className="block text-xs text-gray-400">{o.code}</span>
-              </span>
-            </label>
+              <span className="font-medium">{o.label}</span>
+              <span className="block text-xs mt-0.5 opacity-50">{o.code}</span>
+            </button>
           )
         })}
         {filtered.length === 0 && (
-          <p className="text-sm text-gray-400 text-center py-4">No matches — add it as a custom code below.</p>
+          <p className="text-sm text-slate-600 text-center py-4">No matches — add it as a custom code below.</p>
         )}
       </div>
 
       <div className="space-y-1">
-        <label className="block text-xs font-medium text-gray-600 uppercase tracking-wide">
+        <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">
           Add a custom NAICS code
         </label>
         <div className="flex gap-2">
@@ -142,33 +129,33 @@ function StepNaics({
             onChange={(e) => { setCustomCode(e.target.value); setCustomError('') }}
             onKeyDown={(e) => e.key === 'Enter' && addCustom()}
             maxLength={6}
-            className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900"
+            className="flex-1 bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-slate-100 text-sm placeholder-slate-600 focus:border-red-600 focus:outline-none"
           />
           <button
             type="button"
             onClick={addCustom}
-            className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+            className="rounded-xl border border-slate-700 px-4 py-3 text-sm font-semibold text-slate-300 hover:border-slate-500 hover:text-white transition-colors bg-slate-800"
           >
             Add
           </button>
         </div>
-        {customError && <p className="text-xs text-red-500">{customError}</p>}
+        {customError && <p className="text-xs text-red-400 mt-1">{customError}</p>}
       </div>
 
       {selected.length > 0 && (
-        <div className="flex flex-wrap gap-1.5">
+        <div className="flex flex-wrap gap-1.5 mt-3">
           {selected.map((code) => {
             const label = NAICS_OPTIONS.find((o) => o.code === code)?.label
             return (
               <span
                 key={code}
-                className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800"
+                className="inline-flex items-center gap-1 rounded-full bg-red-950/60 border border-red-800 px-2.5 py-0.5 text-xs font-medium text-red-300"
               >
                 {label ? `${code} · ${label.split(' ').slice(0, 3).join(' ')}` : code}
                 <button
                   type="button"
                   onClick={() => onChange(selected.filter((c) => c !== code))}
-                  className="hover:text-blue-600 ml-0.5"
+                  className="hover:text-red-100 ml-0.5"
                   aria-label={`Remove ${code}`}
                 >
                   ×
@@ -202,61 +189,55 @@ function StepKeywords({
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-xl font-semibold text-gray-900">Keywords & Agencies</h2>
-        <p className="mt-1 text-sm text-gray-500">Tell us what to look for in contract titles and descriptions.</p>
-      </div>
+    <div>
+      <h2 className="text-slate-100 text-xl font-bold leading-snug mb-2">
+        Keywords & Agencies
+      </h2>
+      <p className="text-slate-500 text-sm mb-6">Tell us what to look for in contract titles and descriptions.</p>
 
-      <div className="space-y-1.5">
-        <label className="block text-sm font-medium text-gray-700">
-          Keywords
-          <span className="ml-1 font-normal text-gray-400">(comma-separated)</span>
+      <div className="mb-5">
+        <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
+          Keywords <span className="normal-case font-normal text-slate-600">(comma-separated)</span>
         </label>
         <textarea
           rows={3}
           placeholder="e.g. cybersecurity, IT support, network infrastructure, cloud migration"
           value={keywords}
           onChange={(e) => onKeywordsChange(e.target.value)}
-          className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:border-gray-900 focus:outline-none focus:ring-1 focus:ring-gray-900 resize-none"
+          className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-slate-100 text-sm placeholder-slate-600 focus:border-red-600 focus:outline-none resize-none"
         />
-        <p className="text-xs text-gray-400">
+        <p className="text-xs text-slate-600 mt-1.5">
           {keywords
             ? keywords.split(',').map((k) => k.trim()).filter(Boolean).length + ' keyword(s)'
             : 'Enter terms that appear in contracts you care about'}
         </p>
       </div>
 
-      <div className="space-y-2">
-        <label className="block text-sm font-medium text-gray-700">
-          Agencies
-          <span className="ml-1 font-normal text-gray-400">(optional)</span>
+      <div>
+        <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
+          Agencies <span className="normal-case font-normal text-slate-600">(optional — select all that apply)</span>
         </label>
         <div className="grid grid-cols-4 gap-2">
           {AGENCIES.map((a) => {
             const checked = agencies.includes(a)
             return (
-              <label
+              <button
                 key={a}
-                className={`flex items-center justify-center rounded-lg border py-2.5 text-sm font-medium cursor-pointer transition-colors ${
+                type="button"
+                onClick={() => toggleAgency(a)}
+                className={`rounded-xl border py-3 text-sm font-semibold cursor-pointer transition-all ${
                   checked
-                    ? 'border-gray-900 bg-gray-900 text-white'
-                    : 'border-gray-200 text-gray-600 hover:border-gray-300'
+                    ? 'border-red-600 bg-red-950/50 text-white'
+                    : 'bg-slate-800 border-slate-700 text-slate-300 hover:border-slate-500 hover:bg-slate-800/80'
                 }`}
               >
-                <input
-                  type="checkbox"
-                  checked={checked}
-                  onChange={() => toggleAgency(a)}
-                  className="sr-only"
-                />
                 {a}
-              </label>
+              </button>
             )
           })}
         </div>
         {agencies.length === 0 && (
-          <p className="text-xs text-gray-400">Leave blank to receive opportunities from all agencies.</p>
+          <p className="text-xs text-slate-600 mt-2">Leave blank to receive opportunities from all agencies.</p>
         )}
       </div>
     </div>
@@ -277,26 +258,28 @@ function StepContractSize({
   onSelectIndex: (i: number | null) => void
 }) {
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-xl font-semibold text-gray-900">Contract size</h2>
-        <p className="mt-1 text-sm text-gray-500">Filter by estimated contract value. You can skip this step.</p>
-      </div>
+    <div>
+      <h2 className="text-slate-100 text-xl font-bold leading-snug mb-2">
+        Contract size
+      </h2>
+      <p className="text-slate-500 text-sm mb-6">Filter by estimated contract value. You can skip this step.</p>
 
-      <label className="flex items-center gap-2.5 cursor-pointer">
-        <input
-          type="checkbox"
-          checked={anySize}
-          onChange={(e) => {
-            onAnySizeChange(e.target.checked)
-            if (e.target.checked) onSelectIndex(null)
-          }}
-          className="h-4 w-4 rounded border-gray-300 text-gray-900 focus:ring-gray-900"
-        />
-        <span className="text-sm font-medium text-gray-700">Any size — show me all contracts</span>
-      </label>
+      <button
+        type="button"
+        onClick={() => {
+          onAnySizeChange(!anySize)
+          if (!anySize) onSelectIndex(null)
+        }}
+        className={`w-full text-left rounded-xl px-5 py-3.5 text-sm font-semibold transition-all cursor-pointer border mb-3 ${
+          anySize
+            ? 'border-red-600 bg-red-950/50 text-white'
+            : 'bg-slate-800 border-slate-700 text-slate-300 hover:border-slate-500'
+        }`}
+      >
+        Any size — show me all contracts
+      </button>
 
-      <div className={`space-y-2 transition-opacity ${anySize ? 'opacity-30 pointer-events-none' : ''}`}>
+      <div className={`flex flex-col gap-2 transition-opacity ${anySize ? 'opacity-30 pointer-events-none' : ''}`}>
         {SIZE_OPTIONS.map((opt, i) => {
           const active = selectedIndex === i
           return (
@@ -304,18 +287,13 @@ function StepContractSize({
               key={i}
               type="button"
               onClick={() => onSelectIndex(active ? null : i)}
-              className={`w-full flex items-center justify-between rounded-lg border px-4 py-3 text-sm transition-colors ${
+              className={`w-full text-left rounded-xl px-5 py-3.5 text-sm transition-all cursor-pointer border ${
                 active
-                  ? 'border-blue-500 bg-blue-50 text-blue-700 font-medium'
-                  : 'border-gray-200 text-gray-700 hover:border-gray-300'
+                  ? 'border-red-600 bg-red-950/50 text-white'
+                  : 'bg-slate-800 border-slate-700 text-slate-300 hover:border-slate-500 hover:bg-slate-800/80'
               }`}
             >
-              <span>{opt.label}</span>
-              {active && (
-                <svg className="h-4 w-4 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                </svg>
-              )}
+              {opt.label}
             </button>
           )
         })}
@@ -325,15 +303,6 @@ function StepContractSize({
 }
 
 // ─── Step 4: Certifications ───────────────────────────────────────────────────
-
-const CERT_OPTIONS = [
-  '8(a) Business Development Program',
-  'Woman-Owned Small Business (WOSB)',
-  'Service-Disabled Veteran-Owned (SDVOSB)',
-  'HUBZone Certified',
-  'Veteran-Owned Small Business (VOSB)',
-  'None currently',
-]
 
 function StepCertifications({
   selected,
@@ -356,12 +325,13 @@ function StepCertifications({
   }
 
   return (
-    <div className="space-y-5">
-      <div>
-        <h2 className="text-xl font-semibold text-gray-900">Do you hold any small business certifications?</h2>
-        <p className="mt-1 text-sm text-gray-500">We&apos;ll prioritize contracts that require your certifications.</p>
-      </div>
-      <div className="space-y-2">
+    <div>
+      <h2 className="text-slate-100 text-xl font-bold leading-snug mb-2">
+        Small business certifications
+      </h2>
+      <p className="text-slate-500 text-sm mb-1">We&apos;ll prioritize contracts that require your certifications.</p>
+      <p className="text-slate-600 text-xs mb-6">(select all that apply)</p>
+      <div className="flex flex-col gap-2">
         {CERT_OPTIONS.map(cert => {
           const active = selected.includes(cert)
           return (
@@ -369,18 +339,13 @@ function StepCertifications({
               key={cert}
               type="button"
               onClick={() => toggle(cert)}
-              className={`w-full flex items-center justify-between rounded-lg border px-4 py-3 text-sm text-left transition-colors ${
+              className={`w-full text-left rounded-xl px-5 py-3.5 text-sm transition-all cursor-pointer border ${
                 active
-                  ? 'border-blue-500 bg-blue-50 text-blue-700 font-medium'
-                  : 'border-gray-200 text-gray-700 hover:border-gray-300'
+                  ? 'border-red-600 bg-red-950/50 text-white'
+                  : 'bg-slate-800 border-slate-700 text-slate-300 hover:border-slate-500 hover:bg-slate-800/80'
               }`}
             >
-              <span>{cert}</span>
-              {active && (
-                <svg className="h-4 w-4 text-blue-600 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                </svg>
-              )}
+              {cert}
             </button>
           )
         })}
@@ -389,36 +354,34 @@ function StepCertifications({
   )
 }
 
-// ─── Success Screen ───────────────────────────────────────────────────────────
+// ─── Completion Screen ────────────────────────────────────────────────────────
 
-function SuccessScreen({ onClick }: { onClick: () => void }) {
+function CompletionScreen() {
+  const router = useRouter()
+
+  useEffect(() => {
+    const t = setTimeout(() => router.push('/dashboard'), 2000)
+    return () => clearTimeout(t)
+  }, [router])
+
   return (
-    <div className="text-center space-y-4 py-6">
-      <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
-        <svg className="h-8 w-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+    <>
+      <div className="w-16 h-16 bg-green-950 border-2 border-green-600 rounded-full flex items-center justify-center mx-auto mb-6">
+        <svg className="w-7 h-7 text-green-400" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
         </svg>
       </div>
-      <h2 className="text-xl font-semibold text-gray-900">You&apos;re all set!</h2>
-      <p className="text-gray-500 text-sm max-w-xs mx-auto">
-        Your first digest will arrive tomorrow morning. In the meantime, explore what&apos;s already available on your dashboard.
+      <h2 className="text-slate-100 text-2xl font-bold text-center mb-2">You&apos;re all set!</h2>
+      <p className="text-slate-500 text-sm text-center mb-8">
+        Your FedScout profile is ready. Taking you to your dashboard...
       </p>
-      <p className="text-xs text-gray-400">Your preferences have been saved.</p>
-      <button
-        type="button"
-        onClick={onClick}
-        className="rounded-lg bg-gray-900 px-6 py-3 text-sm font-semibold text-white hover:bg-gray-700 transition-colors"
-      >
-        Go to dashboard →
-      </button>
-    </div>
+    </>
   )
 }
 
 // ─── Main Wizard ──────────────────────────────────────────────────────────────
 
 export default function OnboardingWizard() {
-  const router = useRouter()
   const TOTAL_STEPS = 4
 
   const [step, setStep] = useState(1)
@@ -469,16 +432,6 @@ export default function OnboardingWizard() {
     setDone(true)
   }
 
-  if (done) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
-        <div className="w-full max-w-lg bg-white rounded-2xl shadow-sm border border-gray-100 p-10">
-          <SuccessScreen onClick={() => router.push('/pricing')} />
-        </div>
-      </div>
-    )
-  }
-
   const canAdvanceStep1 = naicsCodes.length > 0
   const isLastStep = step === TOTAL_STEPS
 
@@ -488,78 +441,98 @@ export default function OnboardingWizard() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-12">
-      <div className="w-full max-w-lg bg-white rounded-2xl shadow-sm border border-gray-100 p-10">
-        <div className="mb-1">
+    <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center px-4 py-12">
+      <div className="w-full max-w-lg bg-slate-900 border border-slate-800 rounded-2xl p-8">
+
+        {/* Logo */}
+        <div className="text-center mb-6">
           <Link href="/" className="text-4xl font-extrabold tracking-tight">
             <span className="text-white">Fed</span><span className="text-red-500">Scout</span>
           </Link>
-          <span className="text-xs font-semibold uppercase tracking-widest text-gray-400"> setup</span>
         </div>
 
-        <ProgressBar step={step} total={TOTAL_STEPS} />
+        {done ? (
+          <CompletionScreen />
+        ) : (
+          <>
+            {/* Progress bar */}
+            <div className="h-1.5 bg-slate-800 rounded-full mt-6 mb-2">
+              <div
+                className="h-full bg-red-600 rounded-full transition-all duration-300"
+                style={{ width: `${(step / TOTAL_STEPS) * 100}%` }}
+              />
+            </div>
+            <p className="text-slate-600 text-xs text-right mb-6">
+              Step {step} of {TOTAL_STEPS}
+            </p>
 
-        <div className="min-h-[340px]">
-          {step === 1 && (
-            <StepNaics selected={naicsCodes} onChange={setNaicsCodes} />
-          )}
-          {step === 2 && (
-            <StepKeywords
-              keywords={keywords}
-              agencies={agencies}
-              onKeywordsChange={setKeywords}
-              onAgenciesChange={setAgencies}
-            />
-          )}
-          {step === 3 && (
-            <StepContractSize
-              anySize={anySize}
-              selectedIndex={sizeIndex}
-              onAnySizeChange={setAnySize}
-              onSelectIndex={setSizeIndex}
-            />
-          )}
-          {step === 4 && (
-            <StepCertifications
-              selected={certifications}
-              onChange={setCertifications}
-            />
-          )}
-        </div>
+            <div className="min-h-[340px]">
+              {step === 1 && (
+                <StepNaics selected={naicsCodes} onChange={setNaicsCodes} />
+              )}
+              {step === 2 && (
+                <StepKeywords
+                  keywords={keywords}
+                  agencies={agencies}
+                  onKeywordsChange={setKeywords}
+                  onAgenciesChange={setAgencies}
+                />
+              )}
+              {step === 3 && (
+                <StepContractSize
+                  anySize={anySize}
+                  selectedIndex={sizeIndex}
+                  onAnySizeChange={setAnySize}
+                  onSelectIndex={setSizeIndex}
+                />
+              )}
+              {step === 4 && (
+                <StepCertifications
+                  selected={certifications}
+                  onChange={setCertifications}
+                />
+              )}
+            </div>
 
-        {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
+            {error && <p className="mt-4 text-sm text-red-400">{error}</p>}
 
-        <div className="mt-8 flex items-center justify-between">
-          <button
-            type="button"
-            onClick={handleBack}
-            disabled={step === 1}
-            className="text-sm text-gray-500 hover:text-gray-700 disabled:invisible transition-colors"
-          >
-            ← Back
-          </button>
+            <div className="flex justify-between items-center mt-8">
+              {step > 1 ? (
+                <button
+                  type="button"
+                  onClick={handleBack}
+                  className="text-slate-500 text-sm hover:text-slate-300 transition-colors"
+                >
+                  ← Back
+                </button>
+              ) : (
+                <span />
+              )}
 
-          <div className="flex items-center gap-3">
-            {isLastStep && (
-              <button
-                type="button"
-                onClick={handleFinish}
-                disabled={saving}
-                className="text-sm text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                Skip
-              </button>
-            )}
-            <button
-              type="button"
-              onClick={isLastStep ? handleFinish : handleNext}
-              disabled={!canAdvance() || saving}
-              className="rounded-lg bg-gray-900 px-6 py-2.5 text-sm font-semibold text-white hover:bg-gray-700 disabled:opacity-40 transition-colors"
-            >
-              {saving ? 'Saving…' : isLastStep ? 'Finish' : 'Continue →'}
-            </button>
-          </div>
-        </div>
+              <div className="flex items-center gap-3">
+                {isLastStep && (
+                  <button
+                    type="button"
+                    onClick={handleFinish}
+                    disabled={saving}
+                    className="text-slate-600 text-sm hover:text-slate-400 transition-colors"
+                  >
+                    Skip
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={isLastStep ? handleFinish : handleNext}
+                  disabled={!canAdvance() || saving}
+                  className="bg-red-700 hover:bg-red-600 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold px-8 py-3 rounded-xl text-sm transition-colors"
+                >
+                  {saving ? 'Saving…' : isLastStep ? 'Finish' : 'Continue'}
+                </button>
+              </div>
+            </div>
+          </>
+        )}
+
       </div>
     </div>
   )
