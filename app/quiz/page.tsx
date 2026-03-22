@@ -1,7 +1,9 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { createClient } from '@/lib/supabase/client'
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
 
@@ -128,9 +130,21 @@ function ResultsScreen({ answers }: { answers: Record<string, string> }) {
   )
 }
 
+// ─── NAICS mapping from quiz business_type ────────────────────────────────────
+
+const BUSINESS_TYPE_NAICS: Record<string, string[]> = {
+  it_tech:      ['541511', '541512'],
+  cybersecurity:['541519', '541512'],
+  consulting:   ['541611'],
+  construction: ['236220', '561210'],
+  engineering:  ['541330', '541690'],
+  other:        [],
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function QuizPage() {
+  const router = useRouter()
   const [step, setStep] = useState(0)
   const [answers, setAnswers] = useState<Record<string, string>>({})
   const [selected, setSelected] = useState<string | null>(null)
@@ -145,12 +159,64 @@ export default function QuizPage() {
     }
   }, [answers])
 
+  async function saveQuizAnswers(finalAnswers: Record<string, string>) {
+    try {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return // not logged in — skip Supabase save
+
+      const naicsCodes = BUSINESS_TYPE_NAICS[finalAnswers.business_type] ?? []
+
+      // Save safe columns — guaranteed to exist
+      const { error } = await supabase
+        .from('user_preferences')
+        .upsert(
+          {
+            user_id: user.id,
+            naics_codes: naicsCodes,
+            keywords: [],
+            agencies: [],
+            min_value: null,
+            max_value: null,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: 'user_id' }
+        )
+
+      if (error) {
+        console.error('[quiz] core save failed:', error)
+        return
+      }
+
+      // Save extra columns separately — skip if column doesn't exist yet
+      try {
+        await supabase
+          .from('user_preferences')
+          .update({ certifications: [] })
+          .eq('user_id', user.id)
+      } catch (e) {
+        console.warn('[quiz] extra columns save failed, ignoring:', e)
+      }
+    } catch (e) {
+      console.error('[quiz] saveQuizAnswers error:', e)
+    }
+  }
+
   function handleContinue() {
     if (!selected || !currentQ) return
     const next = { ...answers, [currentQ.id]: selected }
     setAnswers(next)
     setSelected(null)
-    setStep((s) => s + 1)
+
+    const nextStep = step + 1
+    setStep(nextStep)
+
+    // On last question, save and redirect
+    if (nextStep >= totalSteps) {
+      saveQuizAnswers(next).finally(() => {
+        router.push('/signup')
+      })
+    }
   }
 
   function handleBack() {
