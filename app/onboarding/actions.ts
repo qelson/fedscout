@@ -20,12 +20,25 @@ export async function savePreferences(data: PreferencesPayload) {
   // Force-create the profile using the service role client (bypasses RLS,
   // no trigger dependency) — guarantees FK constraint is satisfied
   const serviceClient = createServiceClient()
-  await serviceClient.from('profiles').upsert({
-    id: user.id,
-    email: user.email,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-  }, { onConflict: 'id' })
+  const { error: profileError } = await serviceClient
+    .from('profiles')
+    .upsert({
+      id: user.id,
+      email: user.email,
+      full_name: user.user_metadata?.full_name ?? '',
+      avatar_url: user.user_metadata?.avatar_url ?? null,
+      stripe_customer_id: null,
+      stripe_subscription_status: null,
+      stripe_price_id: null,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'id' })
+
+  console.log('Profile upsert result:', profileError ? profileError.message : 'success')
+
+  if (profileError) {
+    return { error: 'Profile creation failed: ' + profileError.message }
+  }
 
   // Save preferences
   const { error } = await supabase.from('user_preferences').upsert({
