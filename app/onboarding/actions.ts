@@ -11,64 +11,57 @@ interface PreferencesPayload {
   certifications?: string[]
 }
 
-export async function savePreferences(payload: PreferencesPayload) {
+export async function savePreferences(data: PreferencesPayload) {
   const supabase = createClient()
 
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   if (authError || !user) return { error: 'Not authenticated' }
 
-  // Ensure profiles row exists before writing to user_preferences (FK constraint)
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('id')
-    .eq('id', user.id)
-    .maybeSingle()
+  // Wait for profile to exist (Supabase trigger may be delayed)
+  let profileExists = false
+  for (let i = 0; i < 10; i++) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('id', user.id)
+      .maybeSingle()
 
-  if (!profile) {
-    await supabase.from('profiles').insert({
+    if (profile) { profileExists = true; break }
+
+    // Wait 500ms before retrying
+    await new Promise(resolve => setTimeout(resolve, 500))
+  }
+
+  // If profile still doesn't exist after 5 seconds, create it manually
+  if (!profileExists) {
+    await supabase.from('profiles').upsert({
       id: user.id,
       email: user.email,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
-    })
+    }, { onConflict: 'id' })
   }
 
-  // Save safe columns first — these are guaranteed to exist
-  const { error } = await supabase
-    .from('user_preferences')
-    .upsert(
-      {
-        user_id: user.id,
-        naics_codes: payload.naics_codes,
-        keywords: payload.keywords,
-        agencies: payload.agencies,
-        min_value: payload.min_value,
-        max_value: payload.max_value,
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: 'user_id' }
-    )
+  // Now safe to save preferences
+  const { error } = await supabase.from('user_preferences').upsert({
+    user_id: user.id,
+    naics_codes: data.naics_codes ?? [],
+    keywords: data.keywords ?? [],
+    agencies: data.agencies ?? [],
+    min_value: data.min_value ?? null,
+    max_value: data.max_value ?? null,
+    updated_at: new Date().toISOString(),
+  }, { onConflict: 'user_id' })
 
-  if (error) {
-    console.error('[savePreferences] core upsert failed:', error)
-    return { error: error.message }
-  }
+  if (error) return { error: error.message }
 
-  // Save extra columns separately — skip if column doesn't exist yet
+  // Save certifications separately with its own try/catch
   try {
-    const certs = payload.certifications ?? []
-    if (certs.length > 0) {
-      const { error: certsError } = await supabase
-        .from('user_preferences')
-        .update({ certifications: certs })
-        .eq('user_id', user.id)
-
-      if (certsError) {
-        console.warn('[savePreferences] certifications column not ready, skipping:', certsError.message)
-      }
-    }
-  } catch (e) {
-    console.warn('[savePreferences] extra columns save failed, ignoring:', e)
+    await supabase.from('user_preferences').update({
+      certifications: data.certifications ?? [],
+    }).eq('user_id', user.id)
+  } catch (err) {
+    console.error('Certifications save failed (non-blocking):', err)
   }
 
   return { success: true }
