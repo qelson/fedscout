@@ -17,6 +17,22 @@ export async function savePreferences(payload: PreferencesPayload) {
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   if (authError || !user) return { error: 'Not authenticated' }
 
+  // Ensure profiles row exists before writing to user_preferences (FK constraint)
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('id')
+    .eq('id', user.id)
+    .maybeSingle()
+
+  if (!profile) {
+    await supabase.from('profiles').insert({
+      id: user.id,
+      email: user.email,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    })
+  }
+
   // Save safe columns first — these are guaranteed to exist
   const { error } = await supabase
     .from('user_preferences')
